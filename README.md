@@ -119,10 +119,10 @@ See the [DataRobot API keys and endpoints](https://docs.datarobot.com/en/docs/ge
 
 Create an `.env` file in the root directory before running any commands:
 
-1. Copy the sample environment file.
+1. Copy the template environment file.
 
   ```bash
-  cp .env.sample .env
+  cp .env.template .env
   ```
 
 2. Edit the file with your preferred text editor.
@@ -142,73 +142,13 @@ DATAROBOT_API_TOKEN=<YOUR_API_KEY>
 DATAROBOT_ENDPOINT=<YOUR_API_ENDPOINT>
 ```
 
-## Start and choose an agent framework
+## Install and start your agent
 
-Run the helper script to start development:
-
-```bash
-task start
-```
-
-> **NOTE**: If you encounter errors with `task start`, ensure you've completed all [prerequisite](#installation) steps.
-
-Specify which of the four available templates you would like to use during the `task start` process:
-
-| Directory            | Framework   | Description                                    |
-|----------------------|-------------|------------------------------------------------|
-| `agent_crewai`       | CrewAI      | Role-based multi-agent collaboration framework |
-| `agent_generic_base` | Generic     | Base template for any framework                |
-| `agent_langgraph`    | LangGraph   | State-based orchestration framework            |
-| `agent_llamaindex`   | Llama-Index | RAG-focused framework                          |
-| `agent_nat`          | NeMo Agent Toolkit | NVIDIA NeMo Agent Toolkit framework     |
-
-When prompted to setup the Python environment and install prerequisites, type `y` and press `Enter`.
-
-After selection, setup will finish, leaving only files relevant to the template specified in your branch.
-**To switch frameworks later, re-clone the repository and run the steps above again**.
-
-> **NOTE**: Run `task` (with no parameters) from the root directory to see all available commands.
-> Aside from `start`, none are necessary to complete installation.
-
-## Test your agent for local development
-
-Now your agent is ready to be tested locally using the CLI.
-Local testing requires a DataRobot connection for LLM communication.
-Ensure your `.env` file has the correct API token and endpoint, as detailed in [Configure environment variables](#configure-environment-variables).
-
-Run the following command to test your agent:
+Run the script to install all your agent's dependencies:
 
 ```bash
-# You can run task agent:dev in a separate window or use `START_DEV=1` to run the local agent inline
-task agent:cli START_DEV=1 -- execute --user_prompt 'Tell me about Generative AI'
+task install
 ```
-
-Depending on the framework you selected, the test output will vary.
-An example of the output is shown below:
-
-```bash
-{
-  "id": "5379a74f-045e-4720-9c1b-3feb560d77ee",
-  "choices": "[Truncated for display]",
-  "created": 1761327008,
-  "model": "datarobot-deployed-llm",
-  "object": "chat.completion",
-  "service_tier": null,
-  "system_fingerprint": null,
-  "usage": {
-    "completion_tokens": 0,
-    "prompt_tokens": 0,
-    "total_tokens": 0,
-    "completion_tokens_details": null,
-    "prompt_tokens_details": null
-  },
-  "pipeline_interactions": "[Truncated for display]",
-  "datarobot_association_id": "3eb947b0-8a58-4088-a873-5a9f4aeeaeb4",
-  "trace_id": "19e357620b00cee0130314cc58646ddf"
-}
-```
-
-Continue to the next section to deploy and test in a production-like environment.
 
 ## Deploy your agent
 
