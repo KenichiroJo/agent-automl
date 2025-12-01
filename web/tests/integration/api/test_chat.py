@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import uuid as uuidpkg
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 import pytest
 from ag_ui.core import (
@@ -80,12 +80,19 @@ def authenticated_chat_webapp(
 
 
 @pytest.fixture
-def mock_agent_runner(db_deps: Deps) -> None:
-    """Mock the agent runner to return simple test events."""
+def mock_agent_runner(db_deps: Deps) -> dict[str, Any]:
+    """Mock the agent runner to return simple test events and capture call arguments."""
+    call_info: dict[str, Any] = {}
 
     async def agent_run(
-        input: RunAgentInput, user: uuidpkg.UUID
+        input: RunAgentInput,
+        user_id: uuidpkg.UUID,
+        headers: dict[str, str],
     ) -> AsyncGenerator[BaseEvent, None]:
+        # Capture the arguments for verification
+        call_info["headers"] = headers
+        call_info["user_id"] = user_id
+
         async def inner() -> AsyncGenerator[BaseEvent, None]:
             yield RunStartedEvent(thread_id=input.thread_id, run_id=input.run_id)
             yield RunFinishedEvent(
@@ -95,22 +102,23 @@ def mock_agent_runner(db_deps: Deps) -> None:
         return inner()
 
     db_deps.stream_manager.run = agent_run  # type:ignore[method-assign]
+    return call_info
 
 
 async def test_chat_endpoint_includes_auth_header(
     db_deps: Deps,
     test_chat_user: User,
     authenticated_chat_webapp: FastAPI,
-    mock_agent_runner: None,
+    mock_agent_runner: dict[str, Any],
 ) -> None:
     """
-    Integration test that verifies the chat endpoint includes the authorization
-    context header in the streaming response.
+    Integration test that verifies the chat endpoint passes the authorization
+    context header to the agent via stream_manager.run().
 
     This test verifies that:
-    1. All streaming response headers are present (cache-control, connection, x-accel-buffering)
-    2. The X-DataRobot-Authorization-Context header is present in the response
-    3. The JWT token can be decoded using the application's session secret
+    1. The stream_manager.run() is called with the correct user_id
+    2. The stream_manager.run() receives headers dict with X-DataRobot-Authorization-Context
+    3. The JWT token in the header can be decoded using the application's session secret
     4. The token contains the expected user and identity information
     """
 
@@ -126,42 +134,41 @@ async def test_chat_endpoint_includes_auth_header(
 
     with TestClient(authenticated_chat_webapp) as client:
         with connect_sse(client, "POST", "/api/v1/chat", json=json) as event_source:
-            # Check that the response headers include all expected headers
-            response_headers = event_source.response.headers
-
-            # Verify streaming response headers
-            assert response_headers.get("cache-control") == "no-cache", (
-                "Expected 'Cache-Control: no-cache' header for streaming response"
-            )
-            assert response_headers.get("connection") == "keep-alive", (
-                "Expected 'Connection: keep-alive' header for streaming response"
-            )
-            assert response_headers.get("x-accel-buffering") == "no", (
-                "Expected 'X-Accel-Buffering: no' header to disable nginx buffering"
-            )
-
-            # Verify the auth context header is present
-            assert AUTH_CTX_HEADER in response_headers, (
-                f"Expected {AUTH_CTX_HEADER} header in response, "
-                f"but got headers: {list(response_headers.keys())}"
-            )
-
-            # Verify the JWT can be decoded with the session secret
-            jwt_token = response_headers[AUTH_CTX_HEADER]
-            decoded = jwt.decode(jwt_token, db_deps.config.session_secret_key)
-            decoded.validate()
-
-            # Verify it contains user information
-            assert "user" in decoded, "JWT should contain user information"
-            assert "identities" in decoded, "JWT should contain identities"
-            assert decoded["user"]["email"] == test_chat_user.email
-
-            # Verify metadata contains the DataRobot context
-            assert "metadata" in decoded, "JWT should contain metadata"
-            assert "dr_ctx" in decoded["metadata"], (
-                "JWT metadata should contain DataRobot context"
-            )
-            assert decoded["metadata"]["dr_ctx"]["email"] == test_chat_user.email
-
-            # Consume the events to complete the test
+            # Consume the events to allow the agent to be called
             list(event_source.iter_sse())
+
+    # Verify the agent was called with the correct user_id
+    assert mock_agent_runner["user_id"] == test_chat_user.uuid, (
+        f"Expected agent to be called with user_id={test_chat_user.uuid}, "
+        f"but got user_id={mock_agent_runner['user_id']}"
+    )
+
+    # Verify the agent was called with headers
+    agent_headers = mock_agent_runner["headers"]
+    assert agent_headers is not None, "Expected agent to be called with headers dict"
+    assert isinstance(agent_headers, dict), (
+        f"Expected headers to be a dict, but got {type(agent_headers)}"
+    )
+
+    # Verify the auth context header is present in the headers passed to the agent
+    assert AUTH_CTX_HEADER in agent_headers, (
+        f"Expected {AUTH_CTX_HEADER} in headers passed to agent, "
+        f"but got headers: {list(agent_headers.keys())}"
+    )
+
+    # Verify the JWT can be decoded with the session secret
+    jwt_token = agent_headers[AUTH_CTX_HEADER]
+    decoded = jwt.decode(jwt_token, db_deps.config.session_secret_key)
+    decoded.validate()
+
+    # Verify it contains user information
+    assert "user" in decoded, "JWT should contain user information"
+    assert "identities" in decoded, "JWT should contain identities"
+    assert decoded["user"]["email"] == test_chat_user.email
+
+    # Verify metadata contains the DataRobot context
+    assert "metadata" in decoded, "JWT should contain metadata"
+    assert "dr_ctx" in decoded["metadata"], (
+        "JWT metadata should contain DataRobot context"
+    )
+    assert decoded["metadata"]["dr_ctx"]["email"] == test_chat_user.email

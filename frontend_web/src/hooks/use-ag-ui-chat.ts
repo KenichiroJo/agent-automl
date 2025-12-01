@@ -104,7 +104,9 @@ export function useAgUiChat({
 
     const { unsubscribe } = agent.subscribe({
       onTextMessageStartEvent(params: { event: TextMessageStartEvent } & AgentSubscriberParams) {
-        setMessage(createTextMessageFromAgUiEvent(params.event));
+        const message = createTextMessageFromAgUiEvent(params.event);
+        messageRef.current = message;
+        setMessage(message);
       },
       onTextMessageContentEvent(
         params: {
@@ -113,8 +115,10 @@ export function useAgUiChat({
         } & AgentSubscriberParams
       ) {
         const { event, textMessageBuffer } = params;
+        const message = createTextMessageFromAgUiEvent(event, textMessageBuffer);
+        messageRef.current = message;
         setIsThinking(false);
-        setMessage(createTextMessageFromAgUiEvent(event, textMessageBuffer));
+        setMessage(message);
       },
       onTextMessageEndEvent(
         params: {
@@ -123,6 +127,9 @@ export function useAgUiChat({
         } & AgentSubscriberParams
       ) {
         console.debug('onTextMessageEndEvent', params);
+        if (!messageRef.current) {
+          return;
+        }
         setEvents(state => [...state, { type: 'message', value: messageRef.current! }]);
         setMessage(null);
       },
@@ -224,8 +231,6 @@ export function useAgUiChat({
         });
       },
       onRunFinishedEvent() {
-        unsubscribe();
-        unsubscribeRef.current = null;
         setIsAgentRunning(false);
         refetchChats();
       },
@@ -277,11 +282,19 @@ export function useAgUiChat({
 
     unsubscribeRef.current = unsubscribe;
 
-    const result = await agent.runAgent({
-      tools: Object.values(tools).filter(tool => tool.enabled !== false),
-    });
-
-    console.debug('runAgent result', result);
+    try {
+      const result = await agent.runAgent({
+        tools: Object.values(tools).filter(tool => tool.enabled !== false),
+      });
+      console.debug('runAgent result', result);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+      }
+      unsubscribeRef.current = null;
+    }
   }
 
   const combinedEvents: ChatStateEvent[] = useMemo(() => {

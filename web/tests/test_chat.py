@@ -22,7 +22,7 @@ handle authentication setup with a default test user.
 
 import datetime
 import uuid as uuidpkg
-from typing import Any, AsyncGenerator, Generator
+from typing import Any, AsyncGenerator, Dict, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import litellm.exceptions
@@ -176,7 +176,9 @@ async def test_new_chat(
     """Test chat completion endpoint with authenticated client."""
 
     async def agent_run(
-        input: RunAgentInput, user: uuidpkg.UUID
+        input: RunAgentInput,
+        user_id: uuidpkg.UUID,
+        headers: Dict[str, str],
     ) -> AsyncGenerator[BaseEvent, None]:
         async def inner() -> AsyncGenerator[BaseEvent, None]:
             yield RunStartedEvent(thread_id=input.thread_id, run_id=input.run_id)

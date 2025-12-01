@@ -135,8 +135,6 @@ class TestMyAgentLangGraphMCPIntegration:
                 pass
 
             mock_context.assert_called_once_with(
-                api_base="test_base",
-                api_key="test_key",
                 authorization_context={},
             )
             assert agent.mcp_tools == mock_tools
@@ -173,9 +171,7 @@ class TestMyAgentLangGraphMCPIntegration:
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
-            mock_context.assert_called_once_with(
-                api_base=api_base, api_key=api_key, authorization_context={}
-            )
+            mock_context.assert_called_once_with(authorization_context={})
             assert agent.mcp_tools == mock_tools
 
     def test_agent_works_without_mcp_tools(self, langgraph_common_mocks):

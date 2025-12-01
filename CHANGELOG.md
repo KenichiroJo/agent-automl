@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased Changes
 
+## 11.3.1
+- Fix error handling in UI
+- Remove mastra dependencies
+- Full dr start experience
+- Fix autoscroll behavior
+- OAuth fixes
+
 ## 11.3.0
 - Fix devcontainer not compiling Dockerfile
 - Restore missing chainlit lit.py

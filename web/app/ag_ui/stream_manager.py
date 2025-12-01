@@ -16,7 +16,7 @@ import asyncio
 import queue
 from collections.abc import AsyncGenerator
 from functools import partial
-from typing import Callable, Generic, ParamSpec, final
+from typing import Callable, Dict, Generic, ParamSpec, final
 from uuid import UUID
 
 from ag_ui.core import BaseEvent, RunAgentInput
@@ -91,8 +91,9 @@ def create_storage_dr_agent(
     message_repo: MessageRepository,
     config: Config,
     user_id: UUID,
+    headers: Dict[str, str],
 ) -> AGUIAgent:
-    dr_agui = DataRobotAGUIAgent(name, config)
+    dr_agui = DataRobotAGUIAgent(name, config, headers)
 
     storage = AGUIAgentWithStorage(
         name=name,
@@ -111,6 +112,6 @@ def create_stream_manager(
     chat_repo: ChatRepository,
     message_repo: MessageRepository,
     config: Config,
-) -> AGUIStreamManager[UUID]:
+) -> AGUIStreamManager[UUID, Dict[str, str]]:
     factory = partial(create_storage_dr_agent, name, chat_repo, message_repo, config)
     return AGUIStreamManager(factory)

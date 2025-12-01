@@ -17,17 +17,33 @@ export type ChatMessageProps = {
   messages?: ChatStateEvent[];
 } & PropsWithChildren;
 
+const THRESHOLD = 50;
+
 export function ChatMessages({ children, messages, isLoading }: ChatMessageProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoscrollRef = useRef<boolean>(true);
+  const prevScrollRef = useRef<number>(0);
+
+  const onChatScroll = () => {
+    if (!scrollContainerRef.current) {
+      return;
+    }
+    if (prevScrollRef.current > scrollContainerRef.current.scrollTop) {
+      shouldAutoscrollRef.current = false;
+    } else if (scrollContainerRef.current.scrollTop - prevScrollRef.current > THRESHOLD) {
+      shouldAutoscrollRef.current = true;
+    }
+    prevScrollRef.current = scrollContainerRef.current.scrollTop;
+  };
 
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && shouldAutoscrollRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
   return (
-    <div className="messages gap-2" ref={scrollContainerRef}>
+    <div className="messages gap-2" ref={scrollContainerRef} onScroll={onChatScroll}>
       {isLoading ? (
         <div className="p-4 space-y-4">
           <Skeleton className="h-20 w-full" />

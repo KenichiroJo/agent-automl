@@ -15,7 +15,7 @@ import logging
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -46,7 +46,7 @@ class Deps:
     message_repo: MessageRepository
     tokens: Tokens
     user_repo: UserRepository
-    stream_manager: AGUIStreamManager[UUID]
+    stream_manager: AGUIStreamManager[UUID, Dict[str, str]]
 
 
 def sqlite_uri_to_path(uri: str) -> Path | None:

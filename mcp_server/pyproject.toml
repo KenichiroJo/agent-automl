@@ -5,7 +5,7 @@ version = "11.2.2"
 description = "DataRobot MCP Server"
 requires-python = ">=3.11"
 dependencies = [
-    "datarobot-genai[drmcp]==0.1.47",
+    "datarobot-genai[drmcp]>=0.1.60,<0.2.0",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +19,7 @@ dev = [
     "pre-commit>=3.6.0",
     "openai>=1.12.0",
     "responses>=0.25.8",
+    "respx>=0.22.0",
 ]
 
 [build-system]
@@ -141,3 +142,6 @@ show_absolute_path = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
+
+[dependency-groups]
+extras = []

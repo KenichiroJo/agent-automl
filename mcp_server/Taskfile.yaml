@@ -13,6 +13,8 @@ tasks:
 
   dev:
     desc: "🔨 Running MCP locally"
+    env:
+      MLOPS_RUNTIME_PARAM_MCP_SERVER_PORT: 9000
     cmds:
       - echo "🔨 Starting development server"
       - task: install

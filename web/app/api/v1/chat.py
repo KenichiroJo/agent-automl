@@ -198,8 +198,9 @@ async def create_chat_messages(
 
     # Create an event encoder to properly format SSE events
     encoder = EventEncoder(accept=request.headers.get("accept") or "")
+    agent_headers = get_auth_ctx_header(auth_ctx, deps.config.session_secret_key)
 
-    stream = deps.stream_manager.run(run_input, current_user.uuid)
+    stream = deps.stream_manager.run(run_input, current_user.uuid, agent_headers)
 
     async def run_agent_in_background() -> AsyncIterator[str]:
         async for event in await stream:
@@ -210,7 +211,6 @@ async def create_chat_messages(
         "Connection": "keep-alive",
         "X-Accel-Buffering": "no",
     }
-    headers.update(get_auth_ctx_header(auth_ctx, deps.config.session_secret_key))
 
     return StreamingResponse(
         run_agent_in_background(),

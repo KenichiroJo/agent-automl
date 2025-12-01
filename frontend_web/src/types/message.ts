@@ -1,5 +1,7 @@
 // These types are copied from @ai-sdk
-// TODO most likely will be replaced after history shape is defined
+// TODO update according to history API
+import { ToolResult } from '@ai-sdk/provider-utils';
+
 export type ContentPart =
   | TextUIPart
   | ReasoningUIPart
@@ -85,3 +87,25 @@ export type FileUIPart = {
 export type StepStartUIPart = {
   type: 'step-start';
 };
+
+export type ToolInvocation =
+  | ({
+      state: 'partial-call';
+      step?: number;
+    } & ToolCall<string, any>)
+  | ({
+      state: 'call';
+      step?: number;
+    } & ToolCall<string, any>)
+  | ({
+      state: 'result';
+      step?: number;
+    } & ToolResult<string, any, any>);
+
+interface ToolCall<NAME extends string, INPUT> {
+  toolCallId: string;
+  toolName: NAME;
+  input: INPUT;
+  providerExecuted?: boolean;
+  dynamic?: boolean;
+}

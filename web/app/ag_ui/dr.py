@@ -39,13 +39,20 @@ logger = logging.getLogger(__name__)
 class DataRobotAGUIAgent(AGUIAgent):
     """AG-UI wrapper for a DataRobot Agent."""
 
-    def __init__(self, name: str, config: Config):
+    def __init__(
+        self, name: str, config: Config, headers: Dict[str, str] | None = None
+    ) -> None:
         super().__init__(name)
         self.url = config.writer_agent_endpoint
+
+        agent_headers = {"Authorization": f"Bearer {config.datarobot_api_token}"}
+        if headers:
+            agent_headers.update(headers)
+
         self.client = AsyncOpenAI(
             base_url=self.url,
             api_key=config.datarobot_api_token,
-            default_headers={"Authorization": f"Bearer {config.datarobot_api_token}"},
+            default_headers=agent_headers,
         )
 
     async def run(self, input: RunAgentInput) -> AsyncGenerator[BaseEvent, None]:

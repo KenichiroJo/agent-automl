@@ -118,15 +118,20 @@ tasks:
     silent: true
     aliases: [up-dev]
     desc: "🔨 Deploy the backend infrastructure"
+    deps:
+      - auth-check
     cmds:
       - task: install-pulumi-plugin
       - echo "🔨 Deploying the backend infrastructure.."
       - |
         export PULUMI_SKIP_UPDATE_CHECK=1 && uv run pulumi up -y \
-          --target 'urn:pulumi:*::agentic-writer::datarobot:index/deployment:Deployment::*LLM Blueprint Deployment*' \
-          --target 'urn:pulumi:*::agentic-writer::datarobot:index/predictionEnvironment:PredictionEnvironment::*' \
-          --target 'urn:pulumi:*::agentic-writer::datarobot:index/useCase:UseCase::*' \
-          --target 'urn:pulumi:*::agentic-writer::datarobot:index/customModel:CustomModel::*LLM Blueprint Model*' \
-          --target 'urn:pulumi:*::agentic-writer::datarobot:index/apiTokenCredential:ApiTokenCredential::*' \
-          --target 'urn:pulumi:*::agentic-writer::datarobot:index/llmBlueprint:LlmBlueprint::]' \
-          --target 'urn:pulumi:*::agentic-writer::datarobot:index/appOauth:AppOauth::'
+          --target 'urn:pulumi:*::*::datarobot:index/deployment:Deployment::*LLM Blueprint Deployment*' \
+          --target 'urn:pulumi:*::*::datarobot:index/predictionEnvironment:PredictionEnvironment::*' \
+          --target 'urn:pulumi:*::*::datarobot:index/useCase:UseCase::*' \
+          --target 'urn:pulumi:*::*::datarobot:index/apiTokenCredential:ApiTokenCredential::*' \
+          --target 'urn:pulumi:*::*::datarobot:index/customModel:CustomModel::*LLM Blueprint Model*' \
+          --target 'urn:pulumi:*::*::datarobot:index/customModel:CustomModel::LLM Custom Model*' \
+          --target 'urn:pulumi:*::*::datarobot:index/llmBlueprint:LlmBlueprint::LLM Blueprint*' \
+          --target 'urn:pulumi:*::*::datarobot:index/playground:Playground::LLM Playground*' \
+          --target 'urn:pulumi:*::*::datarobot:index/registeredModel:RegisteredModel::LLM Registered Model*' \
+          --target 'urn:pulumi:*::agentic-writer::datarobot:index/appOauth:AppOauth::*'
