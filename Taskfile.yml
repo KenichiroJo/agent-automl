@@ -21,9 +21,6 @@ includes:
   mcp_server:
     taskfile: ./mcp_server/Taskfile.yaml
     dir: ./mcp_server
-  tests:
-    taskfile: ./tests/Taskfile.yaml
-    dir: ./tests
   web:
     taskfile: ./web/Taskfile.yaml
     dir: ./web

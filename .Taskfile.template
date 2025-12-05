@@ -7,9 +7,11 @@ dotenv: ['.env', '.env.{{`{{.ENV}}`}}']
 
 includes:
   {{- range .Includes }}
+  {{- if ne .Name "tests" }}
   {{ .Name }}:
     taskfile: {{ .Taskfile }}
     dir: {{ .Dir }}
+  {{- end }}
   {{- end }}
 
 tasks:
