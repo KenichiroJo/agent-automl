@@ -99,7 +99,7 @@ def name() -> Iterator[str]:
 
 @pytest.fixture
 def model() -> Iterator[str]:
-    yield "datarobot/openai/gpt4o"
+    yield "datarobot/openai/gpt-5-mini"
 
 
 @pytest.fixture

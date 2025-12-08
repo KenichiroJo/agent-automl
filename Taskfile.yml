@@ -39,7 +39,7 @@ tasks:
       - "echo '✨ Choose your agentic framework.'"
       - |
         PYTHONWARNINGS=ignore uvx copier recopy -a .datarobot/answers/agent-agent.yml \
-        -r 11.4.2 \
+        -r 11.4.7 \
         --data base_answers_file=.datarobot/answers/base.yml \
         --data agent_app_name=agent \
         --data fastmcp_answers_file=.datarobot/answers/fastmcp-mcp_server.yml \

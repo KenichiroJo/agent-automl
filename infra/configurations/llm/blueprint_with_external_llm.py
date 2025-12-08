@@ -64,8 +64,8 @@ llm_credential_runtime_params = get_runtime_values(external_model_id)
 # This will ensure your credentials are working properly
 # https://docs.litellm.ai/docs/providers for more details
 # on what string to pass to `verify_llm` This default
-# example is assuming Azure OpenAI with a OPENAI_API_DEPLOYMENT_ID='gpt-4o'.
-# You combine that with azure/gpt-4o for LiteLLM to verify the model.
+# example is assuming Azure OpenAI with a OPENAI_API_DEPLOYMENT_ID='gpt-5-mini'.
+# You combine that with azure/gpt-5-mini for LiteLLM to verify the model.
 # Similar instructions exist for Bedrock: https://docs.litellm.ai/docs/providers/bedrock
 # and Vertex: https://docs.litellm.ai/docs/providers/vertex
 verify_llm(f"azure/{os.getenv('OPENAI_API_DEPLOYMENT_ID')}")

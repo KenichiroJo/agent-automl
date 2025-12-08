@@ -164,7 +164,7 @@ Configure an LLM with an external LLM provider like Azure, Bedrock, Anthropic, o
 
 ```sh
 INFRA_ENABLE_LLM=blueprint_with_external_llm.py
-LLM_DEFAULT_MODEL="azure/gpt-4o"
+LLM_DEFAULT_MODEL="azure/gpt-5-mini-2025-08-07"
 OPENAI_API_VERSION='2024-08-01-preview'
 OPENAI_API_BASE='https://<your_custom_endpoint>.openai.azure.com'
 OPENAI_API_DEPLOYMENT_ID='<your deployment_id>'

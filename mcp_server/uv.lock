@@ -742,7 +742,7 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.1.69"
+version = "0.1.74"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "datarobot" },
@@ -759,9 +759,9 @@ dependencies = [
     { name = "ragas" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/bf/213cf5137c20230cf19cbaba826da22d78c53de51f01c8ad9f66ffc4ab5d/datarobot_genai-0.1.69.tar.gz", hash = "sha256:5e8e0538c035543cde7aa1bf7ef04eef13093b0e0d1dac1dfee9a483b5ded087", size = 105459, upload-time = "2025-12-02T10:01:03.469Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/e5/a61c0cf532c766b12ca52494bfe1e9e7393120d2e0c437811091990cbd15/datarobot_genai-0.1.74.tar.gz", hash = "sha256:4944dba2bad678f61c811cf215018d136f8d47a22bc06ee99c2f60b70d72cbaf", size = 105775, upload-time = "2025-12-04T13:59:13.447Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/72/49/4e48f2cc3f62aa4f4e9efac7b9ebc141da22037506890ef6e091c3855303/datarobot_genai-0.1.69-py3-none-any.whl", hash = "sha256:c80962702f2867c799f7fe0f4fb3bf27fa5cc61ba55b9b68c82a2a7b058de177", size = 172096, upload-time = "2025-12-02T10:01:02.351Z" },
+    { url = "https://files.pythonhosted.org/packages/54/44/2e1ca881296acaaaebf208adb034fe02b8c65fcdaaf6033ee0ef7340280e/datarobot_genai-0.1.74-py3-none-any.whl", hash = "sha256:ad79ffdf3c1a41efe99071ef56da9037b273d99a2488ef07b6c594f7ba22344a", size = 172384, upload-time = "2025-12-04T13:59:11.953Z" },
 ]
 
 [package.optional-dependencies]
@@ -2117,7 +2117,7 @@ wheels = [
 
 [[package]]
 name = "mcp-server"
-version = "11.2.2"
+version = "11.2.4"
 source = { editable = "." }
 dependencies = [
     { name = "datarobot-genai", extra = ["drmcp"] },
@@ -2139,7 +2139,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.1.60,<0.2.0" },
+    { name = "datarobot-genai", extras = ["drmcp"], specifier = ">=0.1.71,<0.2.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "openai", marker = "extra == 'dev'", specifier = ">=1.12.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0" },
