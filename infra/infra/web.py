@@ -35,6 +35,8 @@ from .agent import agent_app_runtime_parameters
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 session_secret_key = os.environ.get(SESSION_SECRET_KEY)
 
+required_key_scope_level: str = "admin"
+
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
@@ -233,6 +235,7 @@ web_app_source = pulumi_datarobot.ApplicationSource(
     resources=pulumi_datarobot.ApplicationSourceResourcesArgs(
         resource_label=CustomAppResourceBundles.CPU_XL.value.id,
     ),
+    required_key_scope_level=required_key_scope_level,
     **web_app_source_args,
 )
 
@@ -242,6 +245,7 @@ web_app = pulumi_datarobot.CustomApplication(
     use_case_ids=[use_case.id],
     allow_auto_stopping=True,
     resources=web_app_source.id.apply(create_resources_args),
+    required_key_scope_level=web_app_source.required_key_scope_level,
     opts=pulumi.ResourceOptions(depends_on=[web_app_source]),
 )
 
@@ -259,7 +263,7 @@ database_uri = os.environ.get(
 pulumi.export("DATABASE_URI", database_uri)
 
 database_uri_cred = pulumi_datarobot.ApiTokenCredential(
-    f"Talk to My Docs Database URI [{PROJECT_NAME}]",
+    f"Agentic Application Starter Database URI [{PROJECT_NAME}]",
     args=pulumi_datarobot.ApiTokenCredentialArgs(
         api_token=str(database_uri),
     ),

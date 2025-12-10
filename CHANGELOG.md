@@ -6,10 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased Changes
+
+## 11.4.0
 - Reduce agents to just planner and writer
 - Fix the default model used everywhere to be a non-deprecated model
 - Fix issues related to docker_context usage in infra and move logic to fixed pulumi for version pinning
 - Fix NAT streaming
+- Event streaming for langgraph
+- Add parameter DATABASE_URI to setup wizard
+- Fix devcontainer configuration
+- Fix execution environment pinning in edge case with blank version id
+- Fix CVEs
+- Remove temperature from NAT workflow.yaml
 
 ## 11.3.4
 - Add versions file

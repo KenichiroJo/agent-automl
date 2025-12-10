@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from typing import Any, Optional
 
 from datarobot_genai.drmcp import (
@@ -35,8 +36,25 @@ class UserAppConfig(BaseSettings):
         description="Name of the user being used",
     )
 
+    # Google OAuth provider configuration
+    is_google_oauth_provider_configured: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            RUNTIME_PARAM_ENV_VAR_NAME_PREFIX + "IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED",
+            "IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED",
+        ),
+        description="Whether Google OAuth provider is configured for Google Drive integration",
+    )
+
+    @property
+    def is_google_oauth_configured(self) -> bool:
+        return self.is_google_oauth_provider_configured or bool(
+            os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET")
+        )
+
     @field_validator(
         "user_name",
+        "is_google_oauth_provider_configured",
         mode="before",
     )
     @classmethod

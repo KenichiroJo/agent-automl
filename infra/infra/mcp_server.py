@@ -363,6 +363,24 @@ if aws_predictions_s3_prefix := os.getenv("AWS_PREDICTIONS_S3_PREFIX"):
     )
 
 
+# Add Google OAuth provider configuration based on GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED: Final[str] = "IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED"
+GOOGLE_CLIENT_ID: Final[str] = "GOOGLE_CLIENT_ID"
+GOOGLE_CLIENT_SECRET: Final[str] = "GOOGLE_CLIENT_SECRET"
+
+# Check if both Google OAuth credentials are provided
+is_google_oauth_configured = bool(
+    os.getenv(GOOGLE_CLIENT_ID) and os.getenv(GOOGLE_CLIENT_SECRET)
+)
+
+deployments_model_runtime_parameters.append(
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key=IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED,
+        type="boolean",
+        value=str(is_google_oauth_configured).lower(),
+    )
+)
+
 deployments_model_runtime_parameters.extend(MCP_USER_RUNTIME_PARAMETERS)
 custom_model_files = get_deployments_app_files(deployments_model_runtime_parameters)
 

@@ -18,6 +18,8 @@ from typing import Any, AsyncGenerator, Dict
 
 from ag_ui.core import (
     BaseEvent,
+    Event,
+    EventType,
     RunAgentInput,
     RunErrorEvent,
     RunFinishedEvent,
@@ -29,6 +31,7 @@ from ag_ui.core import (
 )
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
+from pydantic import TypeAdapter
 
 from app.ag_ui.base import AGUIAgent
 from app.config import Config
@@ -78,12 +81,24 @@ class DataRobotAGUIAgent(AGUIAgent):
             chunks = 0
             async for chunk in generator:
                 chunks += 1
+                # Event is already embedded in the chunk, so we don't need to convert it
+                if hasattr(chunk, "event"):
+                    event = TypeAdapter[Event](Event).validate_python(chunk.event)
+                    if event.type not in [
+                        EventType.TEXT_MESSAGE_CONTENT,
+                        EventType.THINKING_TEXT_MESSAGE_CONTENT,
+                    ]:
+                        logger.info(f"Received event: {chunk.event}")
+                    yield event
+                    continue
+
                 if not chunk.choices:
                     continue
                 if len(chunk.choices) > 1:
                     logger.warning("Received more than one choice from chat completion")
 
                 choice = chunk.choices[0]
+
                 if choice.delta.content:
                     if not text_message_started:
                         yield TextMessageStartEvent(message_id=message_id)

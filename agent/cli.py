@@ -139,7 +139,9 @@ def execute(
     > task cli -- execute --completion_json "example-completion.json"
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
-        raise click.UsageError("User prompt message or completion json must provided.")
+        raise click.UsageError(
+            "User prompt message or completion json must be provided."
+        )
 
     click.echo("Running agent...")
     response = environment.interface.local(
@@ -222,7 +224,9 @@ def execute_deployment(
     > task cli -- execute-deployment --completion_json "example-completion.json" --deployment_id 680a77a9a3
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
-        raise click.UsageError("User prompt message or completion json must provided.")
+        raise click.UsageError(
+            "User prompt message or completion json must be provided."
+        )
     if len(deployment_id) == 0:
         raise click.UsageError("Deployment ID must be provided.")
 
@@ -231,6 +235,7 @@ def execute_deployment(
         deployment_id=deployment_id,
         user_prompt=user_prompt,
         completion_json=completion_json,
+        stream=stream,
     )
     if stream:
         display_response_streaming(response)

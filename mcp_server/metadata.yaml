@@ -45,3 +45,6 @@ runtimeParameterDefinitions:
   - fieldName: SESSION_SECRET_KEY
     type: credential
     credentialType: api_token
+  - fieldName: IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED
+    type: boolean
+    description: Whether Google OAuth provider is configured for Google Drive integration

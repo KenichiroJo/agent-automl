@@ -15,6 +15,7 @@
 Choose this option for direct DataRobot LLM Gateway integration.
 """
 
+import os
 from datarobot_pulumi_utils.pulumi import export
 import pulumi_datarobot as datarobot
 
@@ -57,7 +58,9 @@ print("\n.   - ".join(
     ]
 ))
 """
-default_model: str = "azure/gpt-5-mini-2025-08-07"
+default_model: str = os.environ.get(
+    "LLM_DEFAULT_MODEL", "datarobot/azure/gpt-5-mini-2025-08-07"
+)
 
 # Verify everything is configured properly for this configuration option.
 validate_feature_flags(REQUIRED_FEATURE_FLAGS)
@@ -69,8 +72,7 @@ verify_llm_gateway_model_availability(default_model)
 
 # LiteLLM support DataRobot as a provider, so this validates
 # everything is working and the default LLM you've chosen is available
-# by adding `datarobot/` in front of the model
-verify_llm(f"datarobot/{default_model}")
+verify_llm(f"{default_model}")
 
 app_runtime_parameters = [
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
@@ -79,7 +81,7 @@ app_runtime_parameters = [
         value="1",
     ),
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
-        key=llm_application_name.upper() + "_DEFAULT_MODEL",
+        key="LLM_DEFAULT_MODEL",
         type="string",
         value=default_model,
     ),
@@ -91,7 +93,7 @@ custom_model_runtime_parameters = [
         value="1",
     ),
     datarobot.CustomModelRuntimeParameterValueArgs(
-        key=llm_application_name.upper() + "_DEFAULT_MODEL",
+        key="LLM_DEFAULT_MODEL",
         type="string",
         value=default_model,
     ),

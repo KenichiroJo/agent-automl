@@ -52,8 +52,17 @@ tasks:
       - dr task run test
   {{- end }}
 
+  auth-check:
+    silent: true
+    desc: "🔐 Check authentication prerequisites"
+    cmds:
+      - echo "🔐 Checking authentication.."
+      - dr auth check
+
   dev:
     desc: "🚀 Run all services together"
+    deps:
+      - auth-check
     cmds:
       - |
         task frontend_web:dev &
@@ -75,12 +84,14 @@ tasks:
         echo "🔗 Agent: ${prefix}8842"
         echo "🔗 MCP Server: ${prefix}9000"
         wait
+
   deploy:
     desc: "🚀 Deploy all services"
     env:
       AGENT_DEPLOY: "1"
     cmds:
       - task: infra:deploy
+
   deploy-dev:
     desc: "🚀 Deploy infrastructure and services to development"
     cmds:

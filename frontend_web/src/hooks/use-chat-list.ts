@@ -68,10 +68,13 @@ export function useChatList({ chatId, setChatId }: UseChatListParams) {
     setChatId(newChatID);
   }
 
-  function deleteChatHandler(id: string) {
-    deleteChat(id).then(() => {
-      refetchChats();
-    });
+  function deleteChatHandler(id: string, callbackFn: () => void) {
+    deleteChat(id)
+      .then(() => {
+        refetchChats();
+      })
+      .catch(error => console.error(error))
+      .finally(callbackFn);
   }
 
   return {

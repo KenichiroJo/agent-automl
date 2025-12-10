@@ -73,14 +73,7 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
   );
 }
 
-export function ChatMessage({
-  id,
-  role,
-  createdAt,
-  threadId,
-  resourceId,
-  content,
-}: ChatMessageEvent) {
+export function ChatMessage({ id, role, threadId, resourceId, content }: ChatMessageEvent) {
   let Icon = useMemo(() => {
     if (role === 'user') {
       return User;
@@ -92,9 +85,6 @@ export function ChatMessage({
       return Bot;
     }
   }, [role, content.parts]);
-
-  // Convert createdAt to Date if it's a string
-  const date = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
 
   return (
     <div
@@ -120,7 +110,6 @@ export function ChatMessage({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium capitalize">{role}</span>
-          <span className="text-xs text-muted-foreground">{date.toLocaleTimeString()}</span>
         </div>
         <div className="text-sm whitespace-pre-wrap break-words">
           {content.parts.map((part, i) => (

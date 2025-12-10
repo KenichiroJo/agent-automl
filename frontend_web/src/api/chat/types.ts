@@ -11,6 +11,7 @@ export interface ChatListItem {
   createdAt: Date;
   updatedAt: Date | null;
   metadata?: Record<string, unknown>;
+  initialised?: boolean;
 }
 
 type JSONValue =

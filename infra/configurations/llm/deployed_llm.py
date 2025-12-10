@@ -49,15 +49,17 @@ TEXTGEN_DEPLOYMENT_ID = os.environ["TEXTGEN_DEPLOYMENT_ID"]
 
 llm_application_name: str = "llm"
 llm_resource_name: str = "[llm]"
-default_model: str = os.environ.get("LLM_DEFAULT_MODEL", "datarobot-deployed-llm")
+default_model: str = os.environ.get(
+    "LLM_DEFAULT_MODEL", "datarobot/datarobot-deployed-llm"
+)
 
 # Verify everything is working
 validate_feature_flags(REQUIRED_FEATURE_FLAGS)
-verify_llm(model_id=f"datarobot/{default_model}", deployment_id=TEXTGEN_DEPLOYMENT_ID)
+verify_llm(model_id=f"{default_model}", deployment_id=TEXTGEN_DEPLOYMENT_ID)
 
 playground = datarobot.Playground(
     use_case_id=use_case.id,
-    resource_name=f"LLM Playground [{PROJECT_NAME}]" + llm_resource_name,
+    resource_name=f"LLM Playground [{PROJECT_NAME}] " + llm_resource_name,
 )
 proxy_llm_deployment = datarobot.Deployment.get(
     resource_name="Existing LLM Deployment", id=TEXTGEN_DEPLOYMENT_ID
@@ -68,17 +70,17 @@ prediction_environment = datarobot.PredictionEnvironment.get(
 )
 app_runtime_parameters = [
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
-        key=llm_application_name.upper() + "_DEPLOYMENT_ID",
+        key="LLM_DEPLOYMENT_ID",
         type="string",
         value=proxy_llm_deployment.id,
     ),
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
-        key=llm_application_name.upper() + "_DEFAULT_MODEL",
+        key="LLM_DEFAULT_MODEL",
         type="string",
         value=default_model,
     ),
     datarobot.ApplicationSourceRuntimeParameterValueArgs(
-        key=llm_application_name.upper() + "_DEFAULT_MODEL_FRIENDLY_NAME",
+        key="LLM_DEFAULT_MODEL_FRIENDLY_NAME",
         type="string",
         value=proxy_llm_deployment.label,
     ),
@@ -90,7 +92,7 @@ custom_model_runtime_parameters = [
         value=proxy_llm_deployment.id,
     ),
     datarobot.CustomModelRuntimeParameterValueArgs(
-        key=llm_application_name.upper() + "_DEFAULT_MODEL",
+        key="LLM_DEFAULT_MODEL",
         type="string",
         value=default_model,
     ),

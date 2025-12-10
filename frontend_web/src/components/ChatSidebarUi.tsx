@@ -10,7 +10,14 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MessageSquare, MessageSquareText, MoreHorizontal, Plus, Settings } from 'lucide-react';
+import {
+  MessageSquare,
+  MessageSquareText,
+  MoreHorizontal,
+  Plus,
+  Settings,
+  LoaderCircle,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,13 +26,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { ChatListItem } from '@/api/chat/types';
 import { useNavigate } from 'react-router-dom';
+import { JSX, useState } from 'react';
 
 export interface ChatSidebarProps {
   isLoading: boolean;
   chatId: string;
   onChatCreate: () => any;
   onChatSelect: (threadId: string) => any;
-  onChatDelete: (threadId: string) => any;
+  onChatDelete: (threadId: string, callbackFn: () => void) => any;
   chats?: ChatListItem[];
 }
 
@@ -39,8 +47,19 @@ export function ChatSidebarUi({
 }: ChatSidebarProps) {
   const navigate = useNavigate();
   const goToSettings = () => navigate('/settings');
+  const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+  const getIcon = (id: string): JSX.Element => {
+    if (id === chatToDelete) {
+      return <LoaderCircle className="animate-spin" />;
+    }
+    if (id === chatId) {
+      return <MessageSquareText />;
+    }
+    return <MessageSquare />;
+  };
+
   return (
-    <Sidebar>
+    <Sidebar className="sidebar">
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenuItem key="open-settings">
@@ -52,6 +71,14 @@ export function ChatSidebarUi({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
+          <SidebarMenuItem key="new-chat">
+            <SidebarMenuButton disabled={isLoading} asChild onClick={onChatCreate}>
+              <div>
+                <Plus />
+                <span>Start new chat</span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarGroupContent>
             <SidebarMenu>
               {isLoading ? (
@@ -61,7 +88,7 @@ export function ChatSidebarUi({
                 </>
               ) : (
                 !!chats &&
-                chats.map(chat => (
+                chats.map((chat: ChatListItem) => (
                   <SidebarMenuItem key={chat.id}>
                     <SidebarMenuButton
                       asChild
@@ -69,33 +96,32 @@ export function ChatSidebarUi({
                       onClick={() => onChatSelect(chat.id)}
                     >
                       <div>
-                        {chat.id === chatId ? <MessageSquareText /> : <MessageSquare />}
+                        {getIcon(chat.id)}
                         <span>{chat.name || 'New Chat'}</span>
                       </div>
                     </SidebarMenuButton>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <SidebarMenuAction>
-                          <MoreHorizontal />
-                        </SidebarMenuAction>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent side="right" align="start">
-                        <DropdownMenuItem onClick={() => onChatDelete(chat.id)}>
-                          <span>Delete chat</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {chat.initialised && !chatToDelete && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <SidebarMenuAction>
+                            <MoreHorizontal />
+                          </SidebarMenuAction>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side="right" align="start">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setChatToDelete(chat.id);
+                              onChatDelete(chat.id, () => setChatToDelete(null));
+                            }}
+                          >
+                            <span>Delete chat</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </SidebarMenuItem>
                 ))
               )}
-              <SidebarMenuItem key="new-chat">
-                <SidebarMenuButton disabled={isLoading} asChild onClick={onChatCreate}>
-                  <div>
-                    <Plus />
-                    <span>Start new chat</span>
-                  </div>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

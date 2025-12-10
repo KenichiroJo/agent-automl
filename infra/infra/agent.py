@@ -290,24 +290,24 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
 
     # Get the pinned version ID if provided
     execution_environment_version_id = os.environ.get(
-        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", ""
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", None
     )
-    if not re.match("^[a-f\d]{24}$", execution_environment_version_id):
+    if not re.match("^[a-f\d]{24}$", str(execution_environment_version_id)):
         pulumi.info(
             "No valid execution environment version ID provided, using latest version."
         )
-        execution_environment_version_id = ""
+        execution_environment_version_id = None
 
     pulumi.info(
         "Using existing execution environment: "
         + execution_environment_id
         + " Version ID: "
-        + execution_environment_version_id
+        + str(execution_environment_version_id)
     )
 
     agent_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
         id=execution_environment_id,
-        version_id=execution_environment_version_id or None,
+        version_id=execution_environment_version_id,
         resource_name=agent_asset_name + " Execution Environment",
     )
 else:

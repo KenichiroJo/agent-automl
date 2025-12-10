@@ -244,7 +244,7 @@ class MessageRepository:
         update: "MessageUpdate",
     ) -> Message | None:
         """Update a message (must be owned by the user)."""
-        logger.info("Writing message")
+        logger.debug("Writing message")
         async with self._db.session(writable=True) as session:
             query = await session.exec(
                 select(Message)

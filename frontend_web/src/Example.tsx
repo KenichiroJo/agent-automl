@@ -28,7 +28,7 @@ const initialMessages: MessageResponse[] = [
       parts: [
         {
           type: 'text',
-          text: `Hi. Here you can test your agent based application.`,
+          text: `Hi. Here you can test your agent-based application.`,
         },
       ],
     },

@@ -3,8 +3,8 @@ FROM mcr.microsoft.com/devcontainers/python:3.12
 
 # Until we have a mirror for GitHub releases, we can't use the latest versions
 # https://datarobot.atlassian.net/browse/CFX-4255
-ARG PULUMI_DATAROBOT_PLUGINVERSION=v0.10.22
-ARG DR_VERSION=0.2.16
+ARG PULUMI_DATAROBOT_PLUGINVERSION=v0.10.27
+ARG DR_VERSION=0.2.20
 
 # Install GDB to enable PyCharm -> Attach to Process...
 RUN apt update && apt install -y gdb
@@ -35,7 +35,6 @@ RUN curl -L -o /tmp/dr.tar.gz \
 # Verify installations
 RUN python --version && uv --version && task --version && pulumi version && dr --version && \
     pulumi login --local
-
 
 # Set working directory
 WORKDIR /workspace

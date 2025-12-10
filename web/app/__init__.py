@@ -14,6 +14,7 @@
 import json
 import logging
 import os
+import warnings
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
@@ -41,6 +42,8 @@ STATIC_DIR = ROOT_DIR / "static"
 NOTEBOOK_ID = os.getenv("NOTEBOOK_ID", "")
 
 templates = Jinja2Templates(directory=ROOT_DIR / "templates")
+
+warnings.filterwarnings("ignore")
 
 
 @base_router.get("/health")

@@ -39,7 +39,7 @@ tasks:
       - "echo '✨ Choose your agentic framework.'"
       - |
         PYTHONWARNINGS=ignore uvx copier recopy -a .datarobot/answers/agent-agent.yml \
-        -r 11.4.7 \
+        -r 11.4.16 \
         --data base_answers_file=.datarobot/answers/base.yml \
         --data agent_app_name=agent \
         --data fastmcp_answers_file=.datarobot/answers/fastmcp-mcp_server.yml \
@@ -66,8 +66,17 @@ tasks:
     cmds:
       - dr task run test
 
+  auth-check:
+    silent: true
+    desc: "🔐 Check authentication prerequisites"
+    cmds:
+      - echo "🔐 Checking authentication.."
+      - dr auth check
+
   dev:
     desc: "🚀 Run all services together"
+    deps:
+      - auth-check
     cmds:
       - |
         task frontend_web:dev &
@@ -89,12 +98,14 @@ tasks:
         echo "🔗 Agent: ${prefix}8842"
         echo "🔗 MCP Server: ${prefix}9000"
         wait
+
   deploy:
     desc: "🚀 Deploy all services"
     env:
       AGENT_DEPLOY: "1"
     cmds:
       - task: infra:deploy
+
   deploy-dev:
     desc: "🚀 Deploy infrastructure and services to development"
     cmds:
