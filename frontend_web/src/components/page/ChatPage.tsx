@@ -38,6 +38,7 @@ const initialMessages: MessageResponse[] = [
       ],
     },
     createdAt: new Date(),
+    type: 'initial',
   },
 ];
 

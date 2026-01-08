@@ -64,26 +64,7 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - |
-        task frontend_web:dev &
-        sleep 3
-        task mcp_server:dev &
-        sleep 3
-        task fastapi_server:dev &
-        sleep 3
-        task agent:dev &
-        sleep 8
-        echo "✅ All servers started!"
-        if [[ -n "$NOTEBOOK_ID" ]]; then
-          prefix="${DATAROBOT_API_ENDPOINT//api\/v2/}notebook-sessions/$NOTEBOOK_ID/ports/"
-        else
-          prefix="http://localhost:"
-        fi
-        echo "🔗 Backend: ${prefix}8080"
-        echo "🔗 Frontend: ${prefix}5173"
-        echo "🔗 Agent: ${prefix}8842"
-        echo "🔗 MCP Server: ${prefix}9000"
-        wait
+      - uv run dev.py
 
   deploy:
     desc: "🚀 Deploy all services"

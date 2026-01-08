@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 11.4.5
+- Add release pipeline overrides
+- MCP Server migrate to use GenAI Agents image by default
+- `task dev` tracks start of all processes, and only shows status after all processes actually started
+- `task dev` shows only URL of a frontend service
+- Several README improvements
+  - Install prerequisite tools: add version check note and link to new "Detailed installation commands" section.
+  - New "Detailed installation commands": copy‑paste commands for macOS (Homebrew) and Linux (apt/curl) for dr-cli, git, uv, Pulumi, Taskfile, and node.
+  - Setup guidance: note for DataRobot codespaces to expose ports; expanded wizard walkthrough (Use Case ID instructions; Pulumi stack name constraint); bolded Chainlit playground section title.
+  - Troubleshooting: add "DataRobot codespace port configuration" subsection with explanation and image; clarify fixed vs configurable ports.
+  - Minor copy/clarity edits and reorganization of tips/notes.
+
 ## 11.4.4
 - Fix not publishing fastapi_server/static directory
 

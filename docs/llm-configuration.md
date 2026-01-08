@@ -1,6 +1,6 @@
 # LLM configuration
 
-This template supports multiple flexible LLM options, including:
+This template supports multiple LLM options, including:
 
 - LLM Gateway (default)
 - Already Deployed Text Generation model in DataRobot

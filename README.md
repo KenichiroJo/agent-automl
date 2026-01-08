@@ -55,10 +55,9 @@ Follow the instructions in the sections below to install the prerequisite tools 
 
 ## Install prerequisite tools
 
-Before you begin, you'll need the following tools installed. Refer to the links in the table below for installation instructions for each tool.
-
-> [!TIP]
-> Make sure to install the tools **system-wide** rather than in a virtual environment so they are available in your terminal sessions.
+Before you begin, you'll need the following tools installed.
+If you already have these tools installed, ensure that they are at the required version (or newer) indicated in the table below.
+For example commands to install the tools, see the [Detailed installation commands](#detailed-installation-commands) section.
 
 | Tool         | Version    | Description                     | Installation guide            |
 |--------------|------------|---------------------------------|-------------------------------|
@@ -69,11 +68,51 @@ Before you begin, you'll need the following tools installed. Refer to the links 
 | **Taskfile** | >= 3.43.3  | A task runner.                  | [Taskfile installation guide](https://taskfile.dev/docs/installation)                        |
 | **NodeJS**   | >= 24      | JavaScript runtime for frontend development. | [NodeJS installation guide](https://nodejs.org/en/download/)                        |
 
+> [!TIP]
+> Make sure to install the tools **system-wide** rather than in a virtual environment so they are available in your terminal sessions.
+
+### Detailed installation commands
+
+The following sections provide example installation commands for macOS and Linux (Debian/Ubuntu/DataRobot codespace).
+Click the drop down below that corresponds to your operating system:
+
+- <details><summary><b>macOS</b></summary>
+  <br>
+
+  macOS users can install the prerequisite tools using Homebrew. First, install Homebrew if you don't already have it.
+
+  ```sh
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" # If homebrew is not already installed
+  ```
+
+  Then, install the prerequisite tools with it:
+
+  ```sh
+  brew install datarobot-oss/taps/dr-cli uv pulumi/tap/pulumi go-task node git
+  ```
+
+</details>
+
+- <details><summary><b>Linux</b></summary>
+  <br>
+
+  Linux users can install the prerequisite tools using the package manager for their distribution.
+
+  ```sh
+  curl https://cli.datarobot.com/install | sh
+  sudo apt-get update
+  sudo apt-get install -y python3 python3-pip python3-venv
+  sudo apt-get install -y git
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  curl -fsSL https://get.pulumi.com | sh
+  sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
+  sudo apt-get install -y nodejs npm
+  ```
+
+</details>
+
 > [!IMPORTANT]
 > You will also need a compatible C++ compiler and build tools installed on your system to compile some Python packages.
-
-> [!NOTE]
-> If you do not have a pulumi account, use `pulumi login --local` for local login or create a free account at [the Pulumi website](https://app.pulumi.com/signup).
 
 <details><summary><i>Click here for details on using a development container</i></summary>
 
@@ -105,7 +144,13 @@ devcontainer up --workspace-folder . \&\& devcontainer exec --workspace-folder .
 
 </details>
 
+> [!NOTE]
+> If you do not have a pulumi account, use `pulumi login --local` for local login or create a free account at [the Pulumi website](https://app.pulumi.com/signup).
+
 ## Prepare your local development environment
+
+> [!NOTE]
+> If you are using a DataRobot codespace, you must expose several ports for local testing. See the [DataRobot codespace port configuration](#datarobot-codespace-port-configuration) section for more details.
 
 Run the following command to start the local development environment:
 
@@ -114,14 +159,14 @@ dr start
 ```
 
 This command starts an interactive wizard to guide you through configuring your application. It will automatically clone the application repository and create a `.env` file in the root directory populated with environment variables you specify.
-The wizard provides guidance and context for each step, but for a detailed walkthrough of the wizard steps, click below.
+The wizard provides guidance and context for each step, but for more details, click the dropdown below.
 
 <details><summary><b>Click here for a detailed walkthrough of the wizard steps</b></summary>
 <br>
 
 1. Specify whether you wish to use the "low-code" agent template:
    - Press `y` to use the YAML-based NeMo Agent Toolkit template.
-   - Press `n` to choose a specific agent template.
+   - Press `n` to choose from a list of available agent templates.
 2. After a few moments, the wizard opens a web browser window to automatically configure your API endpoint and key. Click **Proceed** to continue.
    - If the browser doesn't open automatically, look for a URL in the terminal output and open it manually.
    - Click **Proceed** in the browser to continue.
@@ -136,7 +181,11 @@ The wizard provides guidance and context for each step, but for a detailed walkt
   > NOTE: For additional information on authorization server configuration, see the [OAuth applications documentation](docs/oauth-applications.md).
 
 9. Enter a passphrase (or leave blank if you don't want to use a passphrase) for your Pulumi stack and press `Enter`.
-10. Specify the ID of a DataRobot Use Case (e.g., `69331fad5e07469e7c4f5c6f`), if one is available, and press `Enter`. If left blank, a new Use Case will be created automatically.
+10. Specify the ID of a DataRobot Use Case (e.g., `69331fad5e07469e7c4f5c6f`), if one is available, and press `Enter`.
+
+   - You can find your Use Case ID by navigating to the Use Case in the DataRobot UI and copying the ID from the URL.
+   - If left blank, a new Use Case will be created automatically.
+
 11. Specify your LLM integration and press `Enter`.
 
    > NOTE: For additional information on LLM configuration, see the [LLM configuration documentation](docs/llm-configuration.md).
@@ -146,7 +195,7 @@ The wizard provides guidance and context for each step, but for a detailed walkt
 
    > NOTE: This step will take several minutes to complete.
 
-14. Once the configuration finishes, choose a Pulumi stack to use for your application and press `Enter`. If you wish to create a new stack, press `Enter` and you will be prompted to enter a name for it.
+14. Once the configuration finishes, choose a Pulumi stack to use for your application and press `Enter`. If you wish to create a new stack, press `Enter` and you will be prompted to enter a name for it. The name cannot match any existing stack name.
 
 </details>
 
@@ -203,7 +252,8 @@ From here, you can start customizing your agent by adding your own logic and fun
 > [!NOTE]
 > You can also start individual services in separate terminal windows; for example, `task agent:dev` will start just the agent.
 
-<details><summary><i>Click here for details on using the Chainlit standalone agent playground</i></summary>
+<details><summary><b>Click here for details on using the Chainlit standalone agent playground</b></summary>
+<br>
 
 > [!CAUTION]
 > This option is experimental. It is not supported in DataRobot Codespaces.
@@ -304,6 +354,17 @@ The following ports are used by the application components during local developm
 
 > [!NOTE]
 > Ports 8080, 5173, and 8083 are fixed. The agent endpoint (8842) can be configured during the `dr start` wizard, and the MCP server port (9000) can be changed by setting the `MCP_SERVER_PORT` environment variable in your `.env` file.
+
+### DataRobot codespace port configuration
+
+If you are developing within a DataRobot codespace, the development ports need to be exposed.
+This is configured in the **Exposed Ports** section of your **Session Environment** tab (pictured below).
+The ports in the table above must be exposed for local testing.
+If you cloned this application template using the `dr start` command and selected it from the gallery, this configuration is performed automatically; otherwise (e.g., if cloned manually) you must configure these ports manually.
+
+There is a link next to the port to a URL where the service can be accessed when running locally in the codespace.
+
+<img src="docs/img/codespace-ports.png" alt="Ports" width="500px" />
 
 ## Port conflicts
 

@@ -99,7 +99,6 @@ const MarkdownBlock = memo(({ block, index }: { block: string; index: number }) 
   }
 });
 
-// TODO: think about splitting content to smaller parts for better caching
 export function TextContentPart({ part }: { part: TextUIPart }) {
   const blocks = part.text.split(/(```markdown[\s\S]*?```)/g);
   return (
@@ -172,7 +171,14 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
   );
 }
 
-function ChatMessageContent({ id, role, threadId, resourceId, content }: ChatMessageEvent) {
+function ChatMessageContent({
+  id,
+  role,
+  threadId,
+  resourceId,
+  content,
+  type = 'default',
+}: ChatMessageEvent) {
   let Icon = useMemo(() => {
     if (role === 'user') {
       return User;
@@ -191,6 +197,7 @@ function ChatMessageContent({ id, role, threadId, resourceId, content }: ChatMes
       data-message-id={id}
       data-thread-id={threadId}
       data-resource-id={resourceId}
+      data-testid={`${type}-${role}-message-${id}`}
     >
       <div className="flex-shrink-0">
         <div
@@ -210,7 +217,7 @@ function ChatMessageContent({ id, role, threadId, resourceId, content }: ChatMes
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium capitalize">{role}</span>
         </div>
-        <div className="text-sm whitespace-pre-wrap break-words">
+        <div className="text-sm whitespace-pre-wrap break-words content">
           {content.parts.map((part, i) => (
             <UniversalContentPart key={i} part={part} />
           ))}

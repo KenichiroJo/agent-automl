@@ -16,7 +16,12 @@ export function ThinkingEvent() {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1 h-full">
-          <span className="text-sm font-medium flex items-center h-full">Thinking</span>
+          <span
+            className="text-sm font-medium flex items-center h-full"
+            data-testid="thinking-loading"
+          >
+            Thinking
+          </span>
         </div>
       </div>
     </div>

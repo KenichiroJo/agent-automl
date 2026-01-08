@@ -19,6 +19,12 @@ tasks:
     cmds:
       - echo "🔧 Installing dependencies.."
       - uv sync --all-extras --dev
+  uninstall:
+    desc: "🔧 Uninstall dependencies"
+    cmds:
+      - echo "🔧 Uninstalling dependencies.."
+      - rm -rf .venv
+
   start:
     silent: true
     desc: "💻 Installing prior to start"

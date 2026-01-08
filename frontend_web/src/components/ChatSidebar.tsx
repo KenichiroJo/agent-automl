@@ -72,7 +72,12 @@ export function ChatSidebar({
           </SidebarMenuItem>
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarMenuItem key="new-chat">
-            <SidebarMenuButton disabled={isLoading} asChild onClick={onChatCreate}>
+            <SidebarMenuButton
+              disabled={isLoading}
+              asChild
+              onClick={onChatCreate}
+              testId="start-new-chat-btn"
+            >
               <div>
                 <Plus />
                 <span>Start new chat</span>
@@ -80,7 +85,7 @@ export function ChatSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu id="sidebar-chats">
               {isLoading ? (
                 <>
                   <Skeleton className="h-8" />
@@ -91,7 +96,7 @@ export function ChatSidebar({
               ) : (
                 !!chats &&
                 chats.map((chat: ChatListItem) => (
-                  <SidebarMenuItem key={chat.id}>
+                  <SidebarMenuItem key={chat.id} testId={`chat-${chat.id}`}>
                     <SidebarMenuButton
                       asChild
                       isActive={chat.id === chatId}
@@ -111,6 +116,7 @@ export function ChatSidebar({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent side="right" align="start">
                           <DropdownMenuItem
+                            testId="delete-chat-menu-item"
                             onClick={() => {
                               setChatToDelete(chat.id);
                               onChatDelete(chat.id, () => setChatToDelete(null));

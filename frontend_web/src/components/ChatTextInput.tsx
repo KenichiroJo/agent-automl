@@ -54,7 +54,7 @@ export function ChatTextInput({
         <Tooltip>
           <TooltipTrigger asChild>
             <span className="absolute bottom-2 right-2">
-              <Button type="submit" size="icon" disabled>
+              <Button testId="send-message-disabled-btn" type="submit" size="icon" disabled>
                 <Loader2 className="animate-spin" />
               </Button>
             </span>
@@ -67,6 +67,7 @@ export function ChatTextInput({
           onClick={() => onSubmit(userInput)}
           className="absolute bottom-2 right-2"
           size="icon"
+          testId="send-message-btn"
         >
           <Send />
         </Button>

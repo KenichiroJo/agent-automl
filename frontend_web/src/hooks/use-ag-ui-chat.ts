@@ -220,8 +220,10 @@ export function useAgUiChat({
         refetchChats();
       },
       onCustomEvent(params: { event: CustomEvent } & AgentSubscriberParams) {
-        setIsThinking(false);
         const event = params.event;
+        if (event?.name !== 'Heartbeat') {
+          setIsThinking(false);
+        }
         console.debug('onCustomEvent', params);
 
         if (isProgressStart(event)) {

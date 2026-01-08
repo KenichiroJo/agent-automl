@@ -48,13 +48,6 @@ vars:
       fi
 
 tasks:
-  install-pulumi-plugin:
-    # Prevents github rate limiting issues when installing pulumi datarobot plugin.
-    # See https://github.com/datarobot-community/pulumi-datarobot?tab=readme-ov-file#rate-limited-by-github
-    silent: true
-    # desc: "⬇️ Install DataRobot Pulumi plugins"
-    cmds:
-      - "{{.UV_CMD}} run pulumi plugin install resource datarobot {{.PULUMI_DATAROBOT_PLUGIN_VERSION}} --server {{.PULUMI_DATAROBOT_DEFAULT_URL}}"
 
   auth-check:
     silent: true
@@ -86,6 +79,12 @@ tasks:
     cmds:
       - echo "🔧 Installing dependencies.."
       - "{{.UV_CMD}} sync --all-extras --dev"
+
+  uninstall:
+    desc: "🔧 Uninstall dependencies"
+    cmds:
+      - echo "🔧 Uninstalling dependencies.."
+      - rm -rf .venv
 
   start:
     silent: true
@@ -132,23 +131,33 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: install-pulumi-plugin
+      - task: pulumi-datarobot-plugin-check
       - echo "🔨 Deploying the infrastructure.."
-      - "export PULUMI_SKIP_UPDATE_CHECK=1 && {{.UV_CMD}} run pulumi up {{.CLI_ARGS}}"
+      - "{{.UV_CMD}} run pulumi up {{.CLI_ARGS}}"
+
+  refresh:
+    silent: true
+    desc: "🔄 Refresh the infrastructure"
+    deps:
+      - auth-check
+    cmds:
+      - task: pulumi-datarobot-plugin-check
+      - echo "🔄 Refreshing the infrastructure.."
+      - "{{.UV_CMD}} run pulumi refresh {{.CLI_ARGS}}"
 
   info:
     silent: true
     desc: "ℹ️ Show Pulumi stack info"
     cmds:
-      - task: install-pulumi-plugin
-      - "export PULUMI_SKIP_UPDATE_CHECK=1 && {{.UV_CMD}} run pulumi stack {{.CLI_ARGS}}"
+      - task: pulumi-datarobot-plugin-check
+      - "{{.UV_CMD}} run pulumi stack {{.CLI_ARGS}}"
 
   pulumi:
     silent: true
     # desc: "ℹ🛠️ Execute a generic pulumi command"
     cmds:
-      - task: install-pulumi-plugin
-      - "export PULUMI_SKIP_UPDATE_CHECK=1 {{.UV_CMD}} run pulumi {{.CLI_ARGS}}"
+      - task: pulumi-datarobot-plugin-check
+      - "{{.UV_CMD}} run pulumi {{.CLI_ARGS}}"
 
   down:
     silent: true
@@ -158,9 +167,9 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: install-pulumi-plugin
+      - task: pulumi-datarobot-plugin-check
       - echo "💥 Destroying the infrastructure.."
-      - export PULUMI_SKIP_UPDATE_CHECK=1 && {{.UV_CMD}} run pulumi down {{.CLI_ARGS}}
+      - "{{.UV_CMD}} run pulumi destroy {{.CLI_ARGS}}"
 
   copyright:
     aliases:
@@ -187,7 +196,7 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - task: install-pulumi-plugin
+      - task: pulumi-datarobot-plugin-check
       - echo "🔨 Deploying the backend infrastructure.."
       - |
         export PULUMI_SKIP_UPDATE_CHECK=1 && uv run pulumi up -y \

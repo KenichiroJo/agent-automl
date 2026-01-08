@@ -21,6 +21,12 @@ tasks:
       - task: generate-docker-requirement-file
     silent: true
 
+  uninstall:
+    desc: "🔧 Uninstall dependencies"
+    cmds:
+      - echo "🔧 Uninstalling dependencies.."
+      - rm -rf .venv
+
   dev:
     desc: "🔨 Running MCP locally"
     cmds:

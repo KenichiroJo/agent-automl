@@ -55,6 +55,7 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        include: ['**/*.test.tsx'],
         setupFiles: ['./tests/setupMocks.ts', './tests/setupTests.ts'],
         typecheck: {
             tsconfig: './tsconfig.test.json',

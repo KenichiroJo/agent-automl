@@ -5,11 +5,12 @@
 # Development server ports
 # Displayed when running the dev task
 ports:
-  - name: Backend
-    port: 8080
-  - name: Frontend
-    port: 5173
-  - name: Agent
+  - name: agent
     port: 8842
-  - name: MCP Server
+  - name: mcp_server
     port: 9000
+  - name: fastapi_server
+    port: 8080
+  - name: frontend_web
+    port: 5173
+    print_url: true

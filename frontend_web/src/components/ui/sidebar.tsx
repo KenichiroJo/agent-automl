@@ -441,11 +441,16 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<'ul'>) {
   );
 }
 
-function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
+function SidebarMenuItem({
+  className,
+  testId,
+  ...props
+}: React.ComponentProps<'li'> & { testId?: string }) {
   return (
     <li
       data-slot="sidebar-menu-item"
       data-sidebar="menu-item"
+      data-testid={testId}
       className={cn('group/menu-item relative', className)}
       {...props}
     />
@@ -481,11 +486,13 @@ function SidebarMenuButton({
   size = 'default',
   tooltip,
   className,
+  testId,
   ...props
 }: React.ComponentProps<'button'> & {
   asChild?: boolean;
   isActive?: boolean;
   tooltip?: string | React.ComponentProps<typeof TooltipContent>;
+  testId?: string;
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const Comp = asChild ? Slot : 'button';
   const { isMobile, state } = useSidebar();
@@ -496,6 +503,7 @@ function SidebarMenuButton({
       data-sidebar="menu-button"
       data-size={size}
       data-active={isActive}
+      data-testid={testId}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       {...props}
     />
