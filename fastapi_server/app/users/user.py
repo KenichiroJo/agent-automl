@@ -37,7 +37,7 @@ class User(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=False),
     )
     first_name: str | None = Field(None, min_length=2)
-    last_name: str | None = Field(None, min_length=2)
+    last_name: str | None = Field(None)
     email: str = Field(..., unique=True, min_length=2, max_length=255)
     profile_image_url: str | None = None
 
@@ -71,7 +71,7 @@ class UserCreate(SQLModel):
     """
 
     first_name: str | None = Field(None, min_length=2, max_length=50)
-    last_name: str | None = Field(None, min_length=2, max_length=50)
+    last_name: str | None = Field(None, max_length=50)
     email: str = Field(..., unique=True, min_length=2, max_length=255)
     profile_image_url: str | None = None
 

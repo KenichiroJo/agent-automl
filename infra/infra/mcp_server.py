@@ -309,6 +309,26 @@ deployments_model_runtime_parameters: list[
         type="boolean",
         value=str(os.getenv("ENABLE_PREDICTIVE_TOOLS", "true")).lower(),
     ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="enable_jira_tools",
+        type="boolean",
+        value=str(os.getenv("ENABLE_JIRA_TOOLS", "false")).lower(),
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="enable_confluence_tools",
+        type="boolean",
+        value=str(os.getenv("ENABLE_CONFLUENCE_TOOLS", "false")).lower(),
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="enable_gdrive_tools",
+        type="boolean",
+        value=str(os.getenv("ENABLE_GDRIVE_TOOLS", "false")).lower(),
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="enable_microsoft_graph_tools",
+        type="boolean",
+        value=str(os.getenv("ENABLE_MICROSOFT_GRAPH_TOOLS", "false")).lower(),
+    ),
 ]
 
 
@@ -317,7 +337,7 @@ SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 
 if session_secret_key := os.getenv(SESSION_SECRET_KEY):
     session_secret_cred = pulumi_datarobot.ApiTokenCredential(
-        "MCP Server Session Secret Key",
+        "MCP Server [mcp_server] Session Secret Key",
         args=pulumi_datarobot.ApiTokenCredentialArgs(
             api_token=str(session_secret_key),
         ),
@@ -386,22 +406,42 @@ if aws_predictions_s3_prefix := os.getenv("AWS_PREDICTIONS_S3_PREFIX"):
         )
     )
 
-
-# Add Google OAuth provider configuration based on GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
-IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED: Final[str] = "IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED"
-GOOGLE_CLIENT_ID: Final[str] = "GOOGLE_CLIENT_ID"
-GOOGLE_CLIENT_SECRET: Final[str] = "GOOGLE_CLIENT_SECRET"
-
 # Check if both Google OAuth credentials are provided
 is_google_oauth_configured = bool(
-    os.getenv(GOOGLE_CLIENT_ID) and os.getenv(GOOGLE_CLIENT_SECRET)
+    os.getenv("GOOGLE_CLIENT_ID") and os.getenv("GOOGLE_CLIENT_SECRET")
 )
 
 deployments_model_runtime_parameters.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key=IS_GOOGLE_OAUTH_PROVIDER_CONFIGURED,
+        key="is_google_oauth_provider_configured",
         type="boolean",
         value=str(is_google_oauth_configured).lower(),
+    )
+)
+
+# Check if Microsoft OAuth credentials are provided
+is_microsoft_oauth_configured = bool(
+    os.getenv("MICROSOFT_CLIENT_ID") and os.getenv("MICROSOFT_CLIENT_SECRET")
+)
+
+deployments_model_runtime_parameters.append(
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="is_microsoft_oauth_provider_configured",
+        type="boolean",
+        value=str(is_microsoft_oauth_configured).lower(),
+    )
+)
+
+# Check if Atlassian OAuth credentials are provided
+is_atlassian_oauth_configured = bool(
+    os.getenv("ATLASSIAN_CLIENT_ID") and os.getenv("ATLASSIAN_CLIENT_SECRET")
+)
+
+deployments_model_runtime_parameters.append(
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="is_atlassian_oauth_provider_configured",
+        type="boolean",
+        value=str(is_atlassian_oauth_configured).lower(),
     )
 )
 
@@ -433,6 +473,12 @@ custom_model = pulumi_datarobot.CustomModel(
     files=custom_model_files,
     use_case_ids=[use_case.id],
     runtime_parameter_values=deployments_model_runtime_parameters,
+    tags=[
+        pulumi_datarobot.CustomModelTagArgs(
+            name="tool",
+            value="MCP",
+        ),
+    ],
 )
 
 # Register the custom model so it can be deployed

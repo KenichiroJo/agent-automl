@@ -51,9 +51,9 @@ Resources provide static data or context to the AI agent:
 
 ```python
 # mcp_server/app/recipe/resources/my_resource.py
-from app.base.core.mcp_instance import mcp_server_resource
+from app.base.core.mcp_instance import mcp
 
-@mcp_server_resource(uri="custom://my-data")
+@mcp.resource(uri="custom://my-data")
 async def my_custom_resource() -> str:
     """Provide custom data or documentation to the agent."""
     return """
@@ -73,9 +73,9 @@ Prompt templates provide reusable instructions:
 
 ```python
 # mcp_server/app/recipe/prompts/my_prompt.py
-from app.base.core.mcp_instance import mcp_server_prompt
+from app.base.core.mcp_instance import mcp
 
-@mcp_server_prompt()
+@mcp.prompt
 async def my_custom_prompt(context: str) -> str:
     """Custom prompt template for specific tasks."""
     return f"""

@@ -26,11 +26,15 @@ GOOGLE_CLIENT_ID: Final[str] = "GOOGLE_CLIENT_ID"
 GOOGLE_CLIENT_SECRET: Final[str] = "GOOGLE_CLIENT_SECRET"
 BOX_CLIENT_ID: Final[str] = "BOX_CLIENT_ID"
 BOX_CLIENT_SECRET: Final[str] = "BOX_CLIENT_SECRET"
+MICROSOFT_CLIENT_ID: Final[str] = "MICROSOFT_CLIENT_ID"
+MICROSOFT_CLIENT_SECRET: Final[str] = "MICROSOFT_CLIENT_SECRET"
 
 google_client_id = os.environ.get(GOOGLE_CLIENT_ID)
 google_client_secret = os.environ.get(GOOGLE_CLIENT_SECRET)
 box_client_id = os.environ.get(BOX_CLIENT_ID)
 box_client_secret = os.environ.get(BOX_CLIENT_SECRET)
+microsoft_client_id = os.environ.get(MICROSOFT_CLIENT_ID)
+microsoft_client_secret = os.environ.get(MICROSOFT_CLIENT_SECRET)
 
 app_runtime_parameters = []
 
@@ -65,6 +69,21 @@ if box_client_id and box_client_secret:
 
     pulumi.export("Box OAuth Provider ID", box_oauth.id)
     provider_ids.append(box_oauth.id)
+
+if microsoft_client_id and microsoft_client_secret:
+    pulumi.info(
+        "Microsoft OAuth credentials found, adding to application runtime parameters."
+    )
+    pulumi.export("Microsoft Client ID", microsoft_client_id)
+
+    microsoft_oauth = datarobot.AppOauth(
+        f"[{PROJECT_NAME}] Agent Application Microsoft Client",
+        type="microsoft",
+        client_id=microsoft_client_id,
+        client_secret=microsoft_client_secret,
+    )
+    pulumi.export("Microsoft OAuth Provider ID", microsoft_oauth.id)
+    provider_ids.append(microsoft_oauth.id)
 
 oauth_providers_output: pulumi.Output[str] = pulumi.Output.all(*provider_ids).apply(
     lambda ids: json.dumps(ids)

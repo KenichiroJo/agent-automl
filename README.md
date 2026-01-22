@@ -252,30 +252,6 @@ From here, you can start customizing your agent by adding your own logic and fun
 > [!NOTE]
 > You can also start individual services in separate terminal windows; for example, `task agent:dev` will start just the agent.
 
-<details><summary><b>Click here for details on using the Chainlit standalone agent playground</b></summary>
-<br>
-
-> [!CAUTION]
-> This option is experimental. It is not supported in DataRobot Codespaces.
-
-If you want to test just the agent without the full application, you can use the Chainlit playground interface.
-
-1. Start the agent:
-
-```sh
-dr task run agent:dev
-```
-
-2. In another terminal, start the Chainlit interface:
-
-```sh
-dr task run agent:chainlit
-```
-
-This will start a separate frontend application for your local agent at [http://localhost:8083/](http://localhost:8083/).
-
-</details>
-
 # Develop your agent
 
 Now that your agent has been built and tested, you are ready to customize it by adding your own logic and functionality.
@@ -286,7 +262,7 @@ See the following documentation for more details:
 - [Configure LLM providers](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-llm-providers.html)
 - [Use the agent CLI](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-cli-guide.html)
 - [Add Python requirements](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-python-packages.html)
-- [Manage prompts](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-prompts.html)
+- [Manage prompts](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-development.html#modify-agent-prompts)
 
 # Deploy your agent
 
@@ -350,10 +326,9 @@ The following ports are used by the application components during local developm
 | 5173  | Vite dev server              | Frontend development server                    | No           |
 | 8842  | Agent endpoint               | Local agent service endpoint                   | Yes (in wizard) |
 | 9000  | MCP server                   | Model Context Protocol server                  | Yes (via `MCP_SERVER_PORT`) |
-| 8083  | Chainlit interface           | Agent playground interface (Option 3 only)     | No           |
 
 > [!NOTE]
-> Ports 8080, 5173, and 8083 are fixed. The agent endpoint (8842) can be configured during the `dr start` wizard, and the MCP server port (9000) can be changed by setting the `MCP_SERVER_PORT` environment variable in your `.env` file.
+> Ports 8080 and 5173 are fixed. The agent endpoint (8842) can be configured during the `dr start` wizard, and the MCP server port (9000) can be changed by setting the `MCP_SERVER_PORT` environment variable in your `.env` file.
 
 ### DataRobot codespace port configuration
 
@@ -585,7 +560,6 @@ There is a link next to the port to a URL where the service can be accessed when
 
 4. **Test components individually**:
    - Try running services one at a time to isolate issues
-   - Use Option 3 (Chainlit playground) to test agent independently
 
 5. **Update dependencies**:
 

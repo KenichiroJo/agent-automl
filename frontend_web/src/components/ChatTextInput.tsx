@@ -21,7 +21,13 @@ export function ChatTextInput({
   const [isComposing, setIsComposing] = useState(false);
 
   function keyDownHandler(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey && !isComposing && !runningAgent) {
+    if (
+      e.key === 'Enter' &&
+      !e.shiftKey &&
+      !isComposing &&
+      !runningAgent &&
+      userInput.trim().length
+    ) {
       if (e.ctrlKey || e.metaKey) {
         const el = ref.current;
         e.preventDefault();
@@ -68,6 +74,7 @@ export function ChatTextInput({
           className="absolute bottom-2 right-2"
           size="icon"
           testId="send-message-btn"
+          disabled={!userInput.trim().length}
         >
           <Send />
         </Button>

@@ -175,6 +175,25 @@ async def test_no_response_chat_message_created(
     assert len(messages) == 1
 
 
+async def test_chat_name_from_empty_string_content(
+    storage_agent: AGUIAgentWithStorage,
+    stub_agent: StubAgent,
+    chat_repo: ChatRepository,
+) -> None:
+    stub_agent.set_events()
+    await run(
+        storage_agent,
+        "t-chat-name",
+        UserMessage(id="m1", content=" ", name="u1"),
+    )
+
+    chat = await chat_repo.get_chat_by_thread_id(
+        user_uuid=storage_agent._user_id, thread_id="t-chat-name"
+    )
+    assert chat is not None
+    assert chat.name == "New Chat"
+
+
 class TC(NamedTuple):
     agui_id: str
     name: str

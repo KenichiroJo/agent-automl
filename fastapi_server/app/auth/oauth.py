@@ -91,11 +91,24 @@ def get_oauth(config: "Config") -> AsyncOAuthComponent:
                 )
             )
 
+        if config.microsoft_client_id and config.microsoft_client_secret:
+            provider_configs.append(
+                OAuthProviderConfig(
+                    id=ProviderType.MICROSOFT.value,
+                    client_id=config.microsoft_client_id,
+                    client_secret=config.microsoft_client_secret,
+                    scope="https://graph.microsoft.com/Files.ReadWrite.All offline_access",
+                    authorize_url="https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+                    access_token_url="https://login.microsoftonline.com/common/oauth2/v2.0/token",
+                    userinfo_endpoint="https://graph.microsoft.com/v1.0/me",
+                )
+            )
+
         if not provider_configs:
             logger.warning(
                 "No OAuth providers configured for the authlib implementation. "
-                "Use the `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BOX_CLIENT_ID`, and `BOX_CLIENT_SECRET` "
-                "environment variables to set them up."
+                "Use the `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BOX_CLIENT_ID`, `BOX_CLIENT_SECRET`, "
+                "`MICROSOFT_CLIENT_ID`, and `MICROSOFT_CLIENT_SECRET` environment variables to set them up."
             )
 
         return AuthlibOAuth()

@@ -19,7 +19,7 @@ export function useChatList({ chatId, setChatId, showStartChat = false }: UseCha
   const hasChat = useHasChat(chatId);
 
   const addChatToState = useAddChat();
-  const { mutateAsync: deleteChatMutation } = useDeleteChat();
+  const { mutateAsync: deleteChatMutation, isPending: isLoadingDeleteChat } = useDeleteChat();
   const { data: chats, isLoading: isLoadingChats, refetch } = useFetchChats();
 
   useEffect(() => {
@@ -108,6 +108,7 @@ export function useChatList({ chatId, setChatId, showStartChat = false }: UseCha
     isLoadingChats,
     refetchChats,
     deleteChat,
+    isLoadingDeleteChat,
     addChatHandler,
     deleteChatHandler,
   };

@@ -1,7 +1,11 @@
 ---
 version: '3'
-tasks:
+includes:
+  common:
+    taskfile: ../core/task-common.yaml
+    internal: true
 
+tasks:
   auth-check:
     silent: true
     desc: "🔐 Check authentication prerequisites"
@@ -18,7 +22,7 @@ tasks:
     desc: 🔧 Install dependencies
     cmds:
       - echo "🔧 Installing dependencies.."
-      - uv sync --all-extras --dev
+      - "{{.UV_CMD}} sync --all-extras --dev"
   uninstall:
     desc: "🔧 Uninstall dependencies"
     cmds:
@@ -38,7 +42,7 @@ tasks:
       - migrate
     cmds:
       - echo "🔨 Starting development server"
-      - uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+      - "{{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload"
     env:
       TEST_USER_EMAIL: developer@example.com
   lint:
@@ -46,16 +50,16 @@ tasks:
     desc: 🧹 Run linters
     cmds:
       - echo "🧹 Running linters.."
-      - uv run ruff format .
-      - uv run ruff check . --fix
-      - uv run mypy --pretty .
+      - "{{.UV_CMD}} run ruff format ."
+      - "{{.UV_CMD}} run ruff check . --fix"
+      - "{{.UV_CMD}} run mypy --pretty ."
   lint-check:
     silent: true
     desc: 🧹 Check whether the codebase is linted
     cmds:
-      - uv run ruff format --check .
-      - uv run ruff check .
-      - uv run mypy --pretty .
+      - "{{.UV_CMD}} run ruff format --check ."
+      - "{{.UV_CMD}} run ruff check ."
+      - "{{.UV_CMD}} run mypy --pretty ."
   test:
     silent: true
     desc: "🧪 Run tests"
@@ -63,7 +67,7 @@ tasks:
       SESSION_SECRET_KEY: test-secret-key
     cmds:
       - echo "🧪 Running tests.."
-      - uv run pytest --disable-warnings -s --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml
+      - "{{.UV_CMD}} run pytest --disable-warnings -s --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml"
 
   copyright:
     aliases:
@@ -92,9 +96,9 @@ tasks:
       - migrate
     cmds:
       - echo "🔨 Starting development server"
-      - PYTHONPATH="$CALCULATED_PYTHONPATH" uv run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+      - "PYTHONPATH=$CALCULATED_PYTHONPATH {{.UV_CMD}} run uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload"
   migrate:
     desc: 🛠️ Migrate the database
     cmds:
       - echo "🛠️  Running migrations.."
-      - uv run python alembic_migration.py
+      - "{{.UV_CMD}} run python alembic_migration.py"

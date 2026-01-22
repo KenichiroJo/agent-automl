@@ -33,7 +33,7 @@ const initialMessages: MessageResponse[] = [
       parts: [
         {
           type: 'text',
-          text: `Hi. Here you can test your agent-based application.`,
+          text: `Hi! I'm a topic research agent; ask me to research any topic that's on your mind.`,
         },
       ],
     },
@@ -49,12 +49,19 @@ export function ChatPage({
   chatId: string;
   setChatId: (id: string) => void;
 }) {
-  const { hasChat, isNewChat, chats, isLoadingChats, addChatHandler, deleteChatHandler } =
-    useChatList({
-      chatId,
-      setChatId,
-      showStartChat: false,
-    });
+  const {
+    hasChat,
+    isNewChat,
+    chats,
+    isLoadingChats,
+    addChatHandler,
+    deleteChatHandler,
+    isLoadingDeleteChat,
+  } = useChatList({
+    chatId,
+    setChatId,
+    showStartChat: false,
+  });
 
   return (
     <div className="chat">
@@ -65,6 +72,7 @@ export function ChatPage({
         onChatCreate={addChatHandler}
         onChatSelect={setChatId}
         onChatDelete={deleteChatHandler}
+        isLoadingDeleteChat={isLoadingDeleteChat}
       />
 
       <Loading isLoading={isLoadingChats}>

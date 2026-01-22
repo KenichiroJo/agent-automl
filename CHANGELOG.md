@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 11.4.7
+- Fix empty last name validation issue in user create for fastapi_server backend
+- Fix for Taskfile removed in derived repositories
+- Fix missing trailing slash for URL service links in terminal print for task dev
+- Fix broken link for prompt management in README
+- Removed shortcuts for frontend dev server
+- Fix task agent:dev-stop
+- UI: Added confirmation dialog when removing chat
+- Removed Chainlit ui
+- Switch root `task dev` to use shared `drdev` from `datarobot`
+- Added MCP configuration options to select specific tools
+
 ## 11.4.6
 - Fix for task dev in codespaces
 - Fix for dr start procedure
+- UI: Fix active send button when user input is empty
 
 ## 11.4.5
 - Add release pipeline overrides

@@ -1,5 +1,3 @@
-/Taskfile.yml
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -257,6 +255,8 @@ http-client.private.env.json
 
 node_modules/
 
+/test_results/
+
 # Pulumi
 /pulumi_config.json
 
@@ -272,5 +272,7 @@ Taskfile.gen.yaml
 .datarobot/cli/state.yaml
 
 # Agent environment files
+agent/uv.lock
+infra/uv.lock
 */agentic_workflow/pyproject.toml
 */agentic_workflow/uv.lock

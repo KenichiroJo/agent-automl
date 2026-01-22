@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ConfirmDialogModal } from '@/components/ConfirmDialog.tsx';
 import type { ChatListItem } from '@/api/chat/types';
 import { useNavigate } from 'react-router-dom';
 import { JSX, useState } from 'react';
@@ -35,6 +36,7 @@ export interface ChatSidebarProps {
   onChatSelect: (threadId: string) => any;
   onChatDelete: (threadId: string, callbackFn: () => void) => any;
   chats?: ChatListItem[];
+  isLoadingDeleteChat: boolean;
 }
 
 export function ChatSidebar({
@@ -44,12 +46,13 @@ export function ChatSidebar({
   onChatSelect,
   onChatCreate,
   onChatDelete,
+  isLoadingDeleteChat,
 }: ChatSidebarProps) {
   const navigate = useNavigate();
   const goToSettings = () => navigate('/settings');
-  const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+  const [chatToDelete, setChatToDelete] = useState<ChatListItem | null>(null);
   const getIcon = (id: string): JSX.Element => {
-    if (id === chatToDelete) {
+    if (id === chatToDelete?.id && isLoadingDeleteChat) {
       return <LoaderCircle className="animate-spin" />;
     }
     if (id === chatId) {
@@ -57,6 +60,7 @@ export function ChatSidebar({
     }
     return <MessageSquare />;
   };
+  const [open, setOpen] = useState<boolean>(false);
 
   return (
     <Sidebar className="sidebar">
@@ -118,8 +122,8 @@ export function ChatSidebar({
                           <DropdownMenuItem
                             testId="delete-chat-menu-item"
                             onClick={() => {
-                              setChatToDelete(chat.id);
-                              onChatDelete(chat.id, () => setChatToDelete(null));
+                              setChatToDelete(chat);
+                              setOpen(true);
                             }}
                           >
                             <span>Delete chat</span>
@@ -134,6 +138,13 @@ export function ChatSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <ConfirmDialogModal
+        open={open}
+        setOpen={setOpen}
+        onSuccess={() => onChatDelete(chatToDelete!.id, () => setChatToDelete(null))}
+        onDiscard={() => setChatToDelete(null)}
+        chatName={chatToDelete?.name || ''}
+      />
     </Sidebar>
   );
 }

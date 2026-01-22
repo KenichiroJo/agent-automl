@@ -45,6 +45,9 @@ class Config(DataRobotAppFrameworkBaseSettings):
     box_client_id: str | None = None
     box_client_secret: str | None = None
 
+    microsoft_client_id: str | None = None
+    microsoft_client_secret: str | None = None
+
     # these two configs should help to emulate the DataRobot Custom App Authentication like in a deployment application but locally,
     # so you can assume the user and be able to open the UI in the browser without any other configurations.
     # If both are set at the same time, only the DR API key will be used to authenticate the user.

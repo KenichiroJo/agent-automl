@@ -133,9 +133,19 @@ class AGUIAgentWithStorage(AGUIAgent):
                 "Creating initial chat",
                 extra={"thread_id": input.thread_id, "user": str(self._user_id)},
             )
+
+            if (
+                input.messages
+                and isinstance(input.messages[0].content, str)
+                and len(input.messages[0].content.strip()) > 0
+            ):
+                chat_name = input.messages[0].content[:20].strip()
+            else:
+                chat_name = "New Chat"
+
             existing_chat = await self._chat_repo.create_chat(
                 ChatCreate(
-                    user_uuid=self._user_id, name="New Chat", thread_id=input.thread_id
+                    user_uuid=self._user_id, name=chat_name, thread_id=input.thread_id
                 )
             )
 

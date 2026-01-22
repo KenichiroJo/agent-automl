@@ -510,41 +510,6 @@ wheels = [
 ]
 
 [[package]]
-name = "chainlit"
-version = "2.8.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "aiofiles" },
-    { name = "asyncer" },
-    { name = "audioop-lts", marker = "python_full_version >= '3.13'" },
-    { name = "click" },
-    { name = "dataclasses-json" },
-    { name = "fastapi" },
-    { name = "filetype" },
-    { name = "httpx" },
-    { name = "lazify" },
-    { name = "literalai" },
-    { name = "mcp" },
-    { name = "nest-asyncio" },
-    { name = "packaging" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "pyjwt" },
-    { name = "python-dotenv" },
-    { name = "python-multipart" },
-    { name = "python-socketio" },
-    { name = "starlette" },
-    { name = "syncer" },
-    { name = "tomli" },
-    { name = "uvicorn" },
-    { name = "watchfiles" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1e/69/c4011c22c7342c845a55154a2ee47c723ce20425bef3c0bf1baa4bdd4758/chainlit-2.8.4.tar.gz", hash = "sha256:e40474f3470a63b6b3ef6b03cf1976754c07cb055232d0f539ed27fdbd5548c1", size = 9883426, upload-time = "2025-10-29T21:34:11.575Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/a5/dfe4f912a042af10651c81cd9ddde718056a6493b39d94c71df4db9e748e/chainlit-2.8.4-py3-none-any.whl", hash = "sha256:930e271d73200540088e6da59398730f97b8f80a34c76dcb58259d34b139ce78", size = 9725041, upload-time = "2025-10-29T21:34:09.164Z" },
-]
-
-[[package]]
 name = "charset-normalizer"
 version = "3.4.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1125,7 +1090,6 @@ dependencies = [
     { name = "aiosqlite" },
     { name = "alembic" },
     { name = "asyncpg" },
-    { name = "chainlit" },
     { name = "core" },
     { name = "datarobot", extra = ["auth-authlib", "core"] },
     { name = "datarobot-asgi-middleware" },
@@ -1167,7 +1131,6 @@ requires-dist = [
     { name = "aiosqlite", specifier = ">=0.21.0" },
     { name = "alembic", specifier = ">=1.16.5" },
     { name = "asyncpg", specifier = ">=0.30.0" },
-    { name = "chainlit", specifier = ">=2.8.3" },
     { name = "core", editable = "core" },
     { name = "datarobot", extras = ["auth-authlib", "core"], specifier = ">=3.9.1" },
     { name = "datarobot-asgi-middleware", specifier = ">=0.2.0" },
