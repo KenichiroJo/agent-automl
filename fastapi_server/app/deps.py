@@ -27,6 +27,7 @@ from app.auth.oauth import get_oauth
 from app.chats import ChatRepository
 from app.config import Config
 from app.db import DBCtx, create_db_ctx
+from app.jobs.manager import JobManager
 from app.messages import MessageRepository
 from app.users.identity import IdentityRepository
 from app.users.tokens import Tokens
@@ -43,6 +44,7 @@ class Deps:
     config: Config
     db: DBCtx
     identity_repo: IdentityRepository
+    job_manager: JobManager
     message_repo: MessageRepository
     tokens: Tokens
     user_repo: UserRepository
@@ -110,6 +112,9 @@ async def create_deps(
     chat_repo = ChatRepository(db)
     message_repo = MessageRepository(db)
 
+    # バックグラウンドジョブマネージャー
+    job_manager = JobManager()
+
     stream_manager = create_stream_manager(
         name="agent",
         chat_repo=chat_repo,
@@ -127,9 +132,11 @@ async def create_deps(
         auth=oauth,
         tokens=Tokens(oauth, identity_repo),
         db=db,
+        job_manager=job_manager,
         stream_manager=stream_manager,
     )
 
     # shutdown routine
+    await job_manager.shutdown()
     await oauth.close()
     await db.shutdown()

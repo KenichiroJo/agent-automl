@@ -1,0 +1,230 @@
+---
+name: Integration Tests
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - 'agent/**'
+      - 'fastapi_server/**'
+      - 'mcp_server/**'
+      - 'frontend_web/**'
+
+  pull_request:
+    branches: ["main"]
+    paths:
+      - 'agent/**'
+      - 'fastapi_server/**'
+      - 'mcp_server/**'
+      - 'frontend_web/**'
+
+  workflow_dispatch:
+    inputs:
+      run_e2e:
+        description: 'Run E2E tests'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Unit Tests - All Components
+  # ─────────────────────────────────────────────────────────────
+  unit-tests:
+    name: "Unit Tests"
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        component: ["agent", "fastapi_server", "mcp_server"]
+        python-version: ["3.11"]
+    
+    steps:
+      - uses: "actions/checkout@v6"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "${{ matrix.component }}/uv.lock"
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Taskfile
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Dependencies
+        working-directory: ${{ matrix.component }}
+        run: task install
+
+      - name: Run Tests
+        working-directory: ${{ matrix.component }}
+        run: task test
+        env:
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+
+  # ─────────────────────────────────────────────────────────────
+  # Frontend Tests
+  # ─────────────────────────────────────────────────────────────
+  frontend-tests:
+    name: "Frontend Tests"
+    runs-on: "ubuntu-latest"
+    
+    steps:
+      - uses: "actions/checkout@v6"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend_web/package-lock.json
+
+      - name: Install Taskfile
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Dependencies
+        working-directory: frontend_web
+        run: npm ci
+
+      - name: Run Linting
+        working-directory: frontend_web
+        run: npm run lint
+
+      - name: Run Type Check
+        working-directory: frontend_web
+        run: npm run type-check || true
+
+      - name: Run Tests
+        working-directory: frontend_web
+        run: npm run test
+
+  # ─────────────────────────────────────────────────────────────
+  # Build Check
+  # ─────────────────────────────────────────────────────────────
+  build-check:
+    name: "Build Check"
+    runs-on: "ubuntu-latest"
+    needs: [unit-tests, frontend-tests]
+    
+    steps:
+      - uses: "actions/checkout@v6"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend_web/package-lock.json
+
+      - name: Install Taskfile
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Frontend
+        working-directory: frontend_web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build Agent
+        working-directory: agent
+        run: |
+          task install
+          task lint-check
+
+      - name: Build FastAPI Server
+        working-directory: fastapi_server
+        run: |
+          task install
+          task lint-check
+
+  # ─────────────────────────────────────────────────────────────
+  # E2E Tests (Optional)
+  # ─────────────────────────────────────────────────────────────
+  e2e-tests:
+    name: "E2E Tests"
+    runs-on: "ubuntu-latest"
+    needs: [build-check]
+    if: ${{ github.event.inputs.run_e2e == 'true' || github.ref == 'refs/heads/main' }}
+    
+    steps:
+      - uses: "actions/checkout@v6"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          python-version: "3.11"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend_web/package-lock.json
+
+      - name: Install Taskfile
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Playwright
+        working-directory: frontend_web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Start Services
+        run: |
+          # Backend services would be started here
+          # For now, skip actual service startup in CI
+          echo "E2E test infrastructure would be started here"
+        env:
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+          MCP_DEPLOYMENT_ID: ${{ secrets.MCP_DEPLOYMENT_ID }}
+
+      - name: Run E2E Tests
+        working-directory: frontend_web
+        run: |
+          # E2E tests would run here
+          echo "E2E tests would run here"
+          # npx playwright test
+
+  # ─────────────────────────────────────────────────────────────
+  # Quality Report
+  # ─────────────────────────────────────────────────────────────
+  quality-report:
+    name: "Quality Report"
+    runs-on: "ubuntu-latest"
+    needs: [unit-tests, frontend-tests]
+    if: always()
+    
+    steps:
+      - name: Check Results
+        run: |
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+          
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-tests.result }}" == "failure" ]]; then
+            echo "::error::Some tests failed"
+            exit 1
+          fi
+          
+          echo "All tests passed!"

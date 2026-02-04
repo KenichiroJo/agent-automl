@@ -11,16 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Background Jobs Module
 
-from fastapi import APIRouter
+DataRobot の長時間実行タスク（AutoPilot、バッチ予測など）を
+バックグラウンドで監視・管理するモジュール。
+"""
+from app.jobs.manager import JobManager, JobStatus, JobInfo
+from app.jobs.autopilot import AutoPilotMonitor
 
-from .auth import auth_router
-from .chat import chat_router
-from .jobs import jobs_router
-
-router = APIRouter(prefix="/v1")
-
-
-router.include_router(chat_router)
-router.include_router(auth_router)
-router.include_router(jobs_router)
+__all__ = ["JobManager", "JobStatus", "JobInfo", "AutoPilotMonitor"]
