@@ -3,12 +3,12 @@ import { lazy } from 'react';
 import { Navigate } from 'react-router-dom';
 import { SettingsSources } from './pages/SettingSources.tsx';
 import { SettingsLayout } from './pages/SettingsLayout';
-import { ChatPageV2 } from './components/page/ChatPageV2';
+import { ChatPage } from './pages/Chat.tsx';
 const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
 
 export const appRoutes = [
   { path: PATHS.OAUTH_CB, element: <OAuthCallback /> },
-  { path: PATHS.CHAT_PAGE, element: <ChatPageV2 /> },
+  { path: PATHS.CHAT_PAGE, element: <ChatPage /> },
   {
     path: PATHS.SETTINGS.ROOT,
     element: <SettingsLayout />,

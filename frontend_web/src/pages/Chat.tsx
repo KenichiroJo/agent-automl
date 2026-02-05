@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // 案1: チャット統合型レイアウトを使用
-import { ChatPage as ChatPageImplementation } from '@/components/page/ChatPageV2.tsx';
+import { ChatPageV2 } from '@/components/page/ChatPageV2.tsx';
 
 export const ChatPage: React.FC = () => {
   const [chatId, setChatId] = useState<string>(() => window.location.hash?.substring(1));
@@ -10,5 +10,5 @@ export const ChatPage: React.FC = () => {
     window.location.hash = id;
   };
 
-  return <ChatPageImplementation chatId={chatId} setChatId={setChatIdHandler} />;
+  return <ChatPageV2 chatId={chatId} setChatId={setChatIdHandler} />;
 };
