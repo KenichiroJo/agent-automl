@@ -9,6 +9,12 @@ import { FeatureImpactChart, type FeatureImpactData } from './FeatureImpactChart
 import { ModelMetricsCard, type ModelMetric } from './ModelMetricsCard';
 import { ProjectListTable, type Project } from './ProjectListTable';
 import { ModelComparisonTable, type ModelComparisonData } from './ModelComparisonTable';
+import { RocCurveChart, type RocCurvePoint } from './RocCurveChart';
+import { LiftChart, type LiftChartData } from './LiftChart';
+import { FeatureEffectsChart, type FeatureEffectPoint } from './FeatureEffectsChart';
+import { PredictionExplanation, type ShapExplanation } from './PredictionExplanation';
+import { ConfusionMatrixChart, type ConfusionMatrixData } from './ConfusionMatrixChart';
+import { ResidualsChart, type ResidualPoint } from './ResidualsChart';
 
 // インサイトデータの型定義
 export interface FeatureImpactInsight {
@@ -37,16 +43,82 @@ export interface ModelComparisonInsight {
   primaryMetric?: string;
 }
 
+export interface RocCurveInsight {
+  type: 'roc_curve';
+  modelName?: string;
+  projectName?: string;
+  auc: number;
+  data: RocCurvePoint[];
+}
+
+export interface LiftChartInsight {
+  type: 'lift_chart';
+  modelName?: string;
+  projectName?: string;
+  data: LiftChartData[];
+}
+
+export interface FeatureEffectsInsight {
+  type: 'feature_effects';
+  modelName?: string;
+  projectName?: string;
+  featureName: string;
+  data: FeatureEffectPoint[];
+}
+
+export interface PredictionExplanationInsight {
+  type: 'prediction_explanation';
+  modelName?: string;
+  projectName?: string;
+  prediction?: number;
+  baseValue?: number;
+  explanations: ShapExplanation[];
+}
+
+export interface ConfusionMatrixInsight {
+  type: 'confusion_matrix';
+  modelName?: string;
+  projectName?: string;
+  matrix: ConfusionMatrixData;
+}
+
+export interface ResidualsInsight {
+  type: 'residuals';
+  modelName?: string;
+  projectName?: string;
+  residuals: ResidualPoint[];
+}
+
 export type InsightData =
   | FeatureImpactInsight
   | ModelMetricsInsight
   | ProjectListInsight
-  | ModelComparisonInsight;
+  | ModelComparisonInsight
+  | RocCurveInsight
+  | LiftChartInsight
+  | FeatureEffectsInsight
+  | PredictionExplanationInsight
+  | ConfusionMatrixInsight
+  | ResidualsInsight;
 
 export interface InsightRendererProps {
   insight: InsightData;
   onProjectSelect?: (project: Project) => void;
 }
+
+// サポートされているインサイトタイプの一覧
+const VALID_INSIGHT_TYPES = [
+  'feature_impact',
+  'model_metrics',
+  'project_list',
+  'model_comparison',
+  'roc_curve',
+  'lift_chart',
+  'feature_effects',
+  'prediction_explanation',
+  'confusion_matrix',
+  'residuals',
+] as const;
 
 /**
  * メッセージテキストからJSONインサイトデータを抽出
@@ -65,8 +137,9 @@ export function parseInsightFromMessage(text: string): InsightData | null {
     }
   }
 
-  // コードフェンスなしのJSONオブジェクトを探す
-  const jsonObjectMatch = text.match(/\{[\s\S]*"type"\s*:\s*"(feature_impact|model_metrics|project_list|model_comparison)"[\s\S]*\}/);
+  // コードフェンスなしのJSONオブジェクトを探す（すべてのインサイトタイプに対応）
+  const typePattern = VALID_INSIGHT_TYPES.join('|');
+  const jsonObjectMatch = text.match(new RegExp(`\\{[\\s\\S]*"type"\\s*:\\s*"(${typePattern})"[\\s\\S]*\\}`));
   if (jsonObjectMatch) {
     try {
       // JSON部分だけを抽出（最初の { から最後の } まで）
@@ -88,7 +161,7 @@ export function parseInsightFromMessage(text: string): InsightData | null {
 }
 
 function isValidInsightType(type: string): boolean {
-  return ['feature_impact', 'model_metrics', 'project_list', 'model_comparison'].includes(type);
+  return VALID_INSIGHT_TYPES.includes(type as typeof VALID_INSIGHT_TYPES[number]);
 }
 
 /**
@@ -128,6 +201,64 @@ export function InsightRenderer({ insight, onProjectSelect }: InsightRendererPro
           <ModelComparisonTable
             models={insight.models}
             primaryMetric={insight.primaryMetric}
+          />
+        );
+
+      case 'roc_curve':
+        return (
+          <RocCurveChart
+            data={insight.data}
+            auc={insight.auc}
+            modelName={insight.modelName}
+            projectName={insight.projectName}
+          />
+        );
+
+      case 'lift_chart':
+        return (
+          <LiftChart
+            data={insight.data}
+            modelName={insight.modelName}
+            projectName={insight.projectName}
+          />
+        );
+
+      case 'feature_effects':
+        return (
+          <FeatureEffectsChart
+            data={insight.data}
+            featureName={insight.featureName}
+            modelName={insight.modelName}
+            projectName={insight.projectName}
+          />
+        );
+
+      case 'prediction_explanation':
+        return (
+          <PredictionExplanation
+            explanations={insight.explanations}
+            prediction={insight.prediction}
+            baseValue={insight.baseValue}
+            modelName={insight.modelName}
+            projectName={insight.projectName}
+          />
+        );
+
+      case 'confusion_matrix':
+        return (
+          <ConfusionMatrixChart
+            matrix={insight.matrix}
+            modelName={insight.modelName}
+            projectName={insight.projectName}
+          />
+        );
+
+      case 'residuals':
+        return (
+          <ResidualsChart
+            residuals={insight.residuals}
+            modelName={insight.modelName}
+            projectName={insight.projectName}
           />
         );
 
