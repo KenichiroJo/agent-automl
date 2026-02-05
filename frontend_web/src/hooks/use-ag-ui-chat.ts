@@ -155,29 +155,7 @@ export function useAgUiChat({
         }
       }
     }
-    
-    // 現在のセッションで追加されたイベントからもメッセージを追加
-    for (const event of events) {
-      if (event.type === 'message' && event.value) {
-        const msg = event.value;
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          // 既に追加済みのメッセージは除外
-          if (messages.some(m => m.id === msg.id)) {
-            continue;
-          }
 
-          const content = serializeMessageContent(msg);
-          if (content.trim()) {
-            messages.push({
-              id: msg.id,
-              role: msg.role,
-              content: content,
-            });
-          }
-        }
-      }
-    }
-    
     return messages;
   }
 
