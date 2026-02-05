@@ -29,7 +29,7 @@ export function Chat({ initialMessages, children }: ChatProps) {
   }, []);
 
   return (
-    <div className="main-section">
+    <div className="main-section flex flex-col flex-1 min-h-0 overflow-hidden gap-4 p-4">
       {children || (
         <>
           <ChatMessages isLoading={isLoadingHistory} messages={combinedEvents} chatId={chatId} />

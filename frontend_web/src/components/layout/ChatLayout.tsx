@@ -20,12 +20,12 @@ export function ChatLayout({
   children,
 }: ChatLayoutProps) {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="chat flex h-screen bg-background">
       {/* 左カラム: サイドバー（ChatSidebarが独自にスタイリング） */}
       {sidebar}
 
       {/* 右カラム: メインチャットエリア */}
-      <main className="flex-1 flex flex-col min-w-0 bg-background">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-background">
         {children}
       </main>
     </div>

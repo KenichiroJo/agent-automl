@@ -50,12 +50,16 @@ export function ChatMessages({ children, messages, isLoading, chatId }: ChatMess
   }, [messages]);
 
   return (
-    <div className="messages gap-2" ref={scrollContainerRef} onScroll={onChatScroll}>
+    <div 
+      className="messages flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden gap-4 px-2 py-4" 
+      ref={scrollContainerRef} 
+      onScroll={onChatScroll}
+    >
       {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
         </div>
       ) : (
         children ||

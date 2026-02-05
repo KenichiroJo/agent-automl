@@ -89,10 +89,11 @@ export function QuickActions({
   };
 
   return (
-    <div className={cn('px-4 py-3 border-b border-border bg-muted/30', className)}>
-      <div className="flex items-center gap-2 mb-2">
+    <div className={cn('px-4 py-3 border-b border-border/50 bg-gradient-to-r from-muted/30 to-transparent', className)}>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-1 h-5 bg-[#81FBA5] rounded-full" />
         <RefreshCw className="h-4 w-4 text-[#81FBA5]" />
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           クイックアクション
         </span>
       </div>
@@ -107,8 +108,8 @@ export function QuickActions({
               onClick={() => onAction(action.prompt)}
               disabled={isDisabled}
               className={cn(
-                'gap-2 text-xs h-8',
-                !isDisabled && 'hover:bg-[#81FBA5]/10 hover:border-[#81FBA5]/50'
+                'gap-2 text-xs h-9 rounded-lg border-border/50 bg-card/50 backdrop-blur-sm transition-all',
+                !isDisabled && 'hover:bg-[#81FBA5]/10 hover:border-[#81FBA5]/50 hover:shadow-sm'
               )}
             >
               {action.icon}

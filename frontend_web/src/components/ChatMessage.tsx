@@ -159,34 +159,42 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
   const hasResult = !!toolInvocation.result;
 
   return (
-    <div className="my-2 rounded-lg border border-border bg-card/50 dark:bg-card/30 overflow-hidden">
+    <div className="my-3 rounded-xl border border-border/50 bg-gradient-to-br from-card/80 to-muted/30 overflow-hidden shadow-sm">
       {/* Header - クリックで展開/折りたたみ */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 px-3 py-2 bg-muted/30 dark:bg-muted/20 border-b border-border w-full text-left hover:bg-muted/50 transition-colors"
+        className="flex items-center gap-3 px-4 py-3 bg-muted/20 border-b border-border/30 w-full text-left hover:bg-muted/40 transition-all"
       >
         {/* 展開/折りたたみアイコン */}
         {isExpanded ? (
-          <ChevronDown className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         ) : (
-          <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
         )}
-        <Wrench className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-        <span className="text-sm text-muted-foreground">Tool</span>
-        <Badge variant="secondary" className="font-mono text-xs">
+        <div className="flex items-center gap-2">
+          <Wrench className="w-4 h-4 text-[#81FBA5] flex-shrink-0" />
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tool</span>
+        </div>
+        <Badge variant="secondary" className="font-mono text-xs bg-[#81FBA5]/10 text-[#81FBA5] border border-[#81FBA5]/30">
           {toolInvocation.toolName}
         </Badge>
         <div className="ml-auto flex items-center gap-2">
           {hasResult ? (
-            <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
+              <span className="text-xs text-green-500 font-medium">完了</span>
+            </div>
           ) : (
-            <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+            <div className="flex items-center gap-1.5">
+              <Loader2 className="w-4 h-4 text-[#81FBA5] animate-spin" />
+              <span className="text-xs text-muted-foreground">実行中...</span>
+            </div>
           )}
           {isExpanded ? (
-            <Minimize2 className="w-3 h-3 text-muted-foreground" />
+            <Minimize2 className="w-4 h-4 text-muted-foreground" />
           ) : (
-            <Maximize2 className="w-3 h-3 text-muted-foreground" />
+            <Maximize2 className="w-4 h-4 text-muted-foreground" />
           )}
         </div>
       </button>
@@ -196,8 +204,8 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
         <>
           {/* Arguments Section */}
           {toolInvocation.args && (
-            <div className="border-b border-border last:border-b-0">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/20">
+            <div className="border-b border-border/30 last:border-b-0">
+              <div className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-muted-foreground bg-muted/10 border-b border-border/20">
                 <ChevronRight className="w-3 h-3" />
                 Arguments
               </div>
@@ -208,7 +216,7 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
           {/* Result Section */}
           {toolInvocation.result && (
             <div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/20">
+              <div className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-muted-foreground bg-muted/10 border-b border-border/20">
                 <ChevronRight className="w-3 h-3" />
                 Result
               </div>
@@ -243,7 +251,12 @@ function ChatMessageContent({
 
   return (
     <div
-      className={cn('flex gap-3 p-4 rounded-lg', role === 'user' ? 'bg-muted/50' : 'bg-card')}
+      className={cn(
+        'flex gap-4 p-4 rounded-xl transition-all',
+        role === 'user' 
+          ? 'bg-gradient-to-br from-muted/80 to-muted/40 border border-border/50' 
+          : 'bg-gradient-to-br from-card to-card/80 border border-border/30 shadow-sm'
+      )}
       data-message-id={id}
       data-thread-id={threadId}
       data-resource-id={resourceId}
@@ -252,22 +265,27 @@ function ChatMessageContent({
       <div className="flex-shrink-0">
         <div
           className={cn(
-            'w-8 h-8 rounded-full flex items-center justify-center',
+            'w-9 h-9 rounded-xl flex items-center justify-center shadow-sm',
             role === 'user'
-              ? 'bg-primary text-primary-foreground'
+              ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground'
               : role === 'assistant'
-                ? 'bg-secondary text-secondary-foreground'
-                : 'bg-accent text-accent-foreground'
+                ? 'bg-gradient-to-br from-[#81FBA5]/20 to-[#81FBA5]/10 text-[#81FBA5] border border-[#81FBA5]/30'
+                : 'bg-gradient-to-br from-accent to-accent/80 text-accent-foreground'
           )}
         >
           <Icon className="w-4 h-4" />
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-sm font-medium capitalize">{role}</span>
+        <div className="flex items-center gap-2 mb-2">
+          <span className={cn(
+            "text-sm font-semibold capitalize",
+            role === 'user' ? 'text-foreground' : 'text-[#81FBA5]'
+          )}>
+            {role === 'user' ? 'You' : role === 'assistant' ? 'Agent' : role}
+          </span>
         </div>
-        <div className="text-sm whitespace-pre-wrap break-words content">
+        <div className="text-sm whitespace-pre-wrap break-words content leading-relaxed">
           {content.parts.map((part, i) => (
             <UniversalContentPart key={i} part={part} />
           ))}

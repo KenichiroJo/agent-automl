@@ -372,7 +372,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden bg-background">
       {/* コンテキストバー（ヘッダー） */}
       <ContextBar
         project={currentProject}
@@ -392,7 +392,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
       />
 
       {/* チャットエリア */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         <Chat initialMessages={initialMessages}>
           <ChatMessages isLoading={isLoadingHistory} messages={combinedEvents} chatId={chatId}>
             {combinedEvents &&
