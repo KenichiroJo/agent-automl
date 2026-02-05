@@ -152,6 +152,14 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
   // インサイト状態
   const [insights, setInsights] = useState<InsightItem[]>([]);
 
+  // chatIdが変わったときに状態をリセット
+  useEffect(() => {
+    setCurrentProject(undefined);
+    setCurrentModel(undefined);
+    setRecentActivities([]);
+    setInsights([]);
+  }, [chatId]);
+
   // ダークモードトグル
   const [isDark, setIsDark] = useState(() => {
     return document.documentElement.classList.contains('dark');
@@ -208,6 +216,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     if (!combinedEvents) return;
 
     combinedEvents.forEach((event) => {
+      // アシスタントメッセージからインサイトを抽出
       if (isMessageStateEvent(event) && event.value.role === 'assistant') {
         const content = event.value.content;
         if (content && typeof content === 'object' && 'parts' in content) {
@@ -236,6 +245,59 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
               }
             }
           });
+        }
+      }
+
+      // ツール呼び出しの結果からコンテキストを抽出
+      if (isStepStateEvent(event)) {
+        const step = event.value;
+        const toolName = step.name || '';
+        const result = step.result;
+        
+        // list_projectsツールの結果からプロジェクト情報を抽出
+        if (toolName === 'list_projects' && result) {
+          try {
+            const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+            // プロジェクトIDと名前のペアを探す
+            const projectMatches = resultStr.matchAll(/"([a-f0-9]{24})":\s*"([^"]+)"/g);
+            const projects: Array<{id: string; name: string}> = [];
+            for (const match of projectMatches) {
+              projects.push({ id: match[1], name: match[2] });
+            }
+            if (projects.length > 0) {
+              // 最初のプロジェクトをコンテキストに設定
+              setCurrentProject({
+                id: projects[0].id,
+                name: projects[0].name.split(' - ')[0], // 日付部分を除去
+                modelCount: projects.length,
+              });
+              // アクティビティに追加
+              setRecentActivities((prev) => [
+                {
+                  id: uuid(),
+                  type: 'project',
+                  name: `${projects.length}件のプロジェクト取得`,
+                  timestamp: new Date().toLocaleTimeString(),
+                },
+                ...prev.slice(0, 4),
+              ]);
+            }
+          } catch {
+            // パース失敗は無視
+          }
+        }
+
+        // get_feature_impactツールの結果からモデル情報を抽出
+        if ((toolName === 'get_feature_impact' || toolName === 'get_model_accuracy') && result) {
+          setRecentActivities((prev) => [
+            {
+              id: uuid(),
+              type: 'model',
+              name: toolName === 'get_feature_impact' ? 'Feature Impact取得' : 'モデル精度取得',
+              timestamp: new Date().toLocaleTimeString(),
+            },
+            ...prev.slice(0, 4),
+          ]);
         }
       }
     });
