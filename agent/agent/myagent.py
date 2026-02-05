@@ -600,13 +600,38 @@ DataRobotには多様なモデルインサイト機能があります。ユー�
 ```json
 {{
   "type": "model_comparison",
-  "primaryMetric": "AUC",
+  "primaryMetric": "AUC (Validation)",
   "models": [
-    {{"name": "Light GBM", "type": "Gradient Boosting", "primaryScore": 0.89, "trainingTime": "2m 30s", "isRecommended": true}},
-    {{"name": "Random Forest", "type": "Ensemble", "primaryScore": 0.87, "trainingTime": "3m 15s", "isRecommended": false}}
+    {{
+      "modelId": "6928eaeaf183425579ff84c8",
+      "modelName": "Light Gradient Boosted Trees",
+      "modelType": "Light Gradient Boosted Trees Classifier with Early Stopping",
+      "metrics": {{
+        "AUC (Validation)": 0.70383,
+        "AUC (Holdout)": 0.70575,
+        "LogLoss (Validation)": 0.40257
+      }},
+      "isRecommended": true
+    }},
+    {{
+      "modelId": "6928eaeaf183425579ff84cb",
+      "modelName": "RuleFit Classifier",
+      "modelType": "RuleFit Classifier",
+      "metrics": {{
+        "AUC (Validation)": 0.70446,
+        "AUC (Holdout)": 0.70364,
+        "LogLoss (Validation)": 0.40311
+      }},
+      "isRecommended": true
+    }}
   ]
 }}
 ```
+
+**必須ルール**:
+- `list_models` を呼び出した後は、テキスト表ではなく必ず上記形式の `model_comparison` JSON を含める
+- `models` 配列には `modelId`/`modelName`/`modelType` と、少なくとも `AUC.validation`、`AUC.holdout`、`LogLoss.validation` など取得できた主要メトリクスを `metrics` オブジェクトで格納する
+- JSONブロックの直前または直後に自然言語による要約を追加してもよいが、**JSONブロック自体は絶対に省略しない**
 
 **重要**: JSON出力の前後に説明文を追加できますが、JSONブロックは**必ず**上記のフォーマットで出力してください。
 
@@ -642,6 +667,12 @@ DataRobotには多様なモデルインサイト機能があります。ユー�
 | 「精度は？」 | モデルID Y が話題 | get_model_metrics(model_id=Y) |
 | 「特徴量重要度を見せて」 | プロジェクトID X が話題 | まず list_models(project_id=X)、次にFeature Impact |
 | 「デプロイして」 | モデルID Y が話題 | deploy_model(model_id=Y) |
+
+### フォローアップ要求の扱い
+- ユーザーが「詳しく知りたい」「はい」「もっと」「続けて」など曖昧な表現をした場合は、**直前に提示した結果について掘り下げを求めている**と解釈する
+- 文脈が1つに定まっている限り、追加の確認質問は行わず、結果の深掘り・追加の比較・次の推奨アクションを即座に提示する
+- 直前に `model_comparison` を返している場合は、最良モデルの選定理由・ビジネス解釈・推奨次アクションまで踏み込んだ解説を自発的に続ける
+- 文脈が複数候補ある場合のみ、「どの対象か」を質問して明確化する
 
 ### 会話の継続パターン
 
