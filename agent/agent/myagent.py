@@ -546,6 +546,36 @@ DataRobotには多様なモデルインサイト機能があります。ユー�
 }}
 ```
 
+### 時系列予測を返す場合（時系列モデル）
+```json
+{{
+  "type": "time_series_forecast",
+  "modelName": "モデル名",
+  "projectName": "プロジェクト名",
+  "targetName": "ターゲット変数名（例: sales）",
+  "forecastWindow": "7d",
+  "data": [
+    {{"date": "2025-01-01", "actual": 1520, "predicted": null, "lower": null, "upper": null}},
+    {{"date": "2025-01-02", "actual": 1485, "predicted": null, "lower": null, "upper": null}},
+    {{"date": "2025-01-03", "actual": 1650, "predicted": null, "lower": null, "upper": null}},
+    {{"date": "2025-01-04", "actual": null, "predicted": 1580, "lower": 1450, "upper": 1710}},
+    {{"date": "2025-01-05", "actual": null, "predicted": 1620, "lower": 1480, "upper": 1760}},
+    {{"date": "2025-01-06", "actual": null, "predicted": 1690, "lower": 1540, "upper": 1840}}
+  ],
+  "trend": {{
+    "direction": "up",
+    "percentage": 5.2,
+    "description": "来週の売上は5.2%増加する見込みです"
+  }}
+}}
+```
+
+**時系列予測の注意点:**
+- `actual`: 過去の実績値（予測期間はnull）
+- `predicted`: 予測値（過去の期間はnull）
+- `lower`/`upper`: 予測の信頼区間（95%など）
+- `trend.direction`: "up"（増加）、"down"（減少）、"stable"（横ばい）のいずれか
+
 ### プロジェクト一覧を返す場合
 ```json
 {{

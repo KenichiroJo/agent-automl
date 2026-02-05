@@ -15,6 +15,7 @@ import { FeatureEffectsChart, type FeatureEffectDataPoint } from './FeatureEffec
 import { PredictionExplanation, type ShapExplanation } from './PredictionExplanation';
 import { ConfusionMatrixChart, type ConfusionMatrixData } from './ConfusionMatrixChart';
 import { ResidualsChart, type ResidualPoint } from './ResidualsChart';
+import { TimeSeriesForecastChart, type TimeSeriesDataPoint } from './TimeSeriesForecastChart';
 
 // インサイトデータの型定義
 export interface FeatureImpactInsight {
@@ -89,6 +90,15 @@ export interface ResidualsInsight {
   residuals: ResidualPoint[];
 }
 
+export interface TimeSeriesForecastInsight {
+  type: 'time_series_forecast';
+  modelName?: string;
+  projectName?: string;
+  data: TimeSeriesDataPoint[];
+  forecastStartIndex?: number;
+  yAxisLabel?: string;
+}
+
 export type InsightData =
   | FeatureImpactInsight
   | ModelMetricsInsight
@@ -99,7 +109,8 @@ export type InsightData =
   | FeatureEffectsInsight
   | PredictionExplanationInsight
   | ConfusionMatrixInsight
-  | ResidualsInsight;
+  | ResidualsInsight
+  | TimeSeriesForecastInsight;
 
 export interface InsightRendererProps {
   insight: InsightData;
@@ -118,6 +129,7 @@ const VALID_INSIGHT_TYPES = [
   'prediction_explanation',
   'confusion_matrix',
   'residuals',
+  'time_series_forecast',
 ] as const;
 
 /**
@@ -259,6 +271,17 @@ export function InsightRenderer({ insight, onProjectSelect }: InsightRendererPro
             residuals={insight.residuals}
             modelName={insight.modelName}
             projectName={insight.projectName}
+          />
+        );
+
+      case 'time_series_forecast':
+        return (
+          <TimeSeriesForecastChart
+            data={insight.data}
+            modelName={insight.modelName}
+            projectName={insight.projectName}
+            forecastStartIndex={insight.forecastStartIndex}
+            yAxisLabel={insight.yAxisLabel}
           />
         );
 

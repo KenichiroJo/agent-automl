@@ -1,28 +1,47 @@
-import { PropsWithChildren } from 'react';
+/**
+ * ChatPage - 3カラム分析ビュー
+ *
+ * 左: コンテキストパネル（プロジェクト・モデル情報）
+ * 中央: 会話エリア
+ * 右: インサイトパネル
+ */
+import { PropsWithChildren, useState, useEffect, useCallback } from 'react';
 import { v4 as uuid } from 'uuid';
 import z from 'zod/v4';
-import { Skeleton } from '@/components/ui/skeleton.tsx';
-import { Chat } from '@/components/Chat.tsx';
-import { useChatContext } from '@/hooks/use-chat-context.ts';
-import { useAgUiTool } from '@/hooks/use-ag-ui-tool.ts';
-import { useChatList } from '@/hooks/use-chat-list.ts';
-import { ChatMessages } from '@/components/ChatMessages.tsx';
-import { ChatProgress } from '@/components/ChatProgress.tsx';
-import { ChatTextInput } from '@/components/ChatTextInput.tsx';
-import { ChatError } from '@/components/ChatError.tsx';
-import { ChatMessagesMemo } from '@/components/ChatMessage.tsx';
-import { StepEvent } from '@/components/StepEvent.tsx';
-import { ThinkingEvent } from '@/components/ThinkingEvent.tsx';
-import { ChatProvider } from '@/components/ChatProvider.tsx';
-import { StartNewChat } from '@/components/StartNewChat.tsx';
-import { ChatSidebar } from '@/components/ChatSidebar.tsx';
+import { Bot, Settings, Moon, Sun } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Chat } from '@/components/Chat';
+import { useChatContext } from '@/hooks/use-chat-context';
+import { useAgUiTool } from '@/hooks/use-ag-ui-tool';
+import { useChatList } from '@/hooks/use-chat-list';
+import { ChatMessages } from '@/components/ChatMessages';
+import { ChatProgress } from '@/components/ChatProgress';
+import { ChatTextInput } from '@/components/ChatTextInput';
+import { ChatError } from '@/components/ChatError';
+import { ChatMessagesMemo } from '@/components/ChatMessage';
+import { StepEvent } from '@/components/StepEvent';
+import { ThinkingEvent } from '@/components/ThinkingEvent';
+import { ChatProvider } from '@/components/ChatProvider';
+import { StartNewChat } from '@/components/StartNewChat';
+import { ChatSidebar } from '@/components/ChatSidebar';
 import {
   isErrorStateEvent,
   isMessageStateEvent,
   isStepStateEvent,
   isThinkingEvent,
-} from '@/types/events.ts';
-import { type MessageResponse } from '@/api/chat/types.ts';
+} from '@/types/events';
+import { type MessageResponse } from '@/api/chat/types';
+import {
+  AnalysisLayout,
+  ContextPanel,
+  InsightPanel,
+  type ProjectInfo,
+  type ModelInfo,
+  type RecentActivity,
+  type InsightItem,
+} from '@/components/layout';
+import { parseInsightFromMessage, type InsightData } from '@/components/insights';
 
 const initialMessages: MessageResponse[] = [
   {
@@ -33,7 +52,18 @@ const initialMessages: MessageResponse[] = [
       parts: [
         {
           type: 'text',
-          text: `Hi! I'm a topic research agent; ask me to research any topic that's on your mind.`,
+          text: `こんにちは！DataRobot AutoML/MLOps エージェントです。🤖
+
+プロジェクトの分析、モデルの評価、予測の実行など、DataRobotに関することをお手伝いします。
+
+**できること:**
+- 📁 プロジェクト一覧の表示
+- 📊 モデルの精度確認・比較
+- 🔍 特徴量重要度（Feature Impact）の分析
+- 📈 時系列予測の可視化
+- 🚀 モデルのデプロイ
+
+何を調べますか？`,
         },
       ],
     },
@@ -114,6 +144,115 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     isAgentRunning,
   } = useChatContext();
 
+  // コンテキスト状態
+  const [currentProject, setCurrentProject] = useState<ProjectInfo | undefined>();
+  const [currentModel, setCurrentModel] = useState<ModelInfo | undefined>();
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+
+  // インサイト状態
+  const [insights, setInsights] = useState<InsightItem[]>([]);
+
+  // ダークモードトグル
+  const [isDark, setIsDark] = useState(() => {
+    return document.documentElement.classList.contains('dark');
+  });
+
+  const toggleDarkMode = () => {
+    document.documentElement.classList.toggle('dark');
+    setIsDark(!isDark);
+  };
+
+  // インサイトからコンテキストを更新
+  const updateContextFromInsight = useCallback((insight: InsightData) => {
+    // プロジェクト一覧からプロジェクトを更新
+    if (insight.type === 'project_list' && insight.projects.length > 0) {
+      const project = insight.projects[0];
+      setCurrentProject({
+        id: project.id,
+        name: project.name,
+        createdAt: project.createdAt,
+      });
+    }
+
+    // モデル関連のインサイトからモデル情報を更新
+    if ('modelName' in insight && insight.modelName) {
+      setCurrentModel((prev) => ({
+        ...prev,
+        id: prev?.id || uuid(),
+        name: insight.modelName || '',
+        score: 'metrics' in insight ? (insight as { metrics?: Array<{ value?: number }> }).metrics?.[0]?.value : prev?.score,
+        metric: 'metrics' in insight ? (insight as { metrics?: Array<{ name?: string }> }).metrics?.[0]?.name : prev?.metric,
+      }));
+    }
+
+    // アクティビティを追加
+    const activityType = insight.type === 'project_list' ? 'project' : 
+                        insight.type === 'model_comparison' ? 'model' : 'insight';
+    const activityName = 'modelName' in insight ? insight.modelName || insight.type :
+                        'projectName' in insight ? insight.projectName || insight.type : 
+                        insight.type;
+    
+    setRecentActivities((prev) => [
+      {
+        id: uuid(),
+        type: activityType,
+        name: activityName || '',
+        timestamp: new Date().toLocaleTimeString(),
+      },
+      ...prev.slice(0, 4),
+    ]);
+  }, []);
+
+  // 会話からインサイトを自動抽出
+  useEffect(() => {
+    if (!combinedEvents) return;
+
+    combinedEvents.forEach((event) => {
+      if (isMessageStateEvent(event) && event.value.role === 'assistant') {
+        const content = event.value.content;
+        if (content && typeof content === 'object' && 'parts' in content) {
+          (content.parts as Array<{ type: string; text?: string }>).forEach((part) => {
+            if (part.type === 'text' && part.text) {
+              const insightData = parseInsightFromMessage(part.text);
+              if (insightData) {
+                // 重複チェック
+                const exists = insights.some(
+                  (i) => JSON.stringify(i.data) === JSON.stringify(insightData)
+                );
+                if (!exists) {
+                  setInsights((prev) => [
+                    ...prev,
+                    {
+                      id: uuid(),
+                      data: insightData,
+                      isPinned: false,
+                      createdAt: new Date(),
+                    },
+                  ]);
+
+                  // プロジェクト/モデル情報を自動更新
+                  updateContextFromInsight(insightData);
+                }
+              }
+            }
+          });
+        }
+      }
+    });
+  }, [combinedEvents, insights, updateContextFromInsight]);
+
+  // インサイトのピン留めトグル
+  const handleTogglePin = useCallback((id: string) => {
+    setInsights((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, isPinned: !i.isPinned } : i))
+    );
+  }, []);
+
+  // インサイトの削除
+  const handleRemoveInsight = useCallback((id: string) => {
+    setInsights((prev) => prev.filter((i) => i.id !== id));
+  }, []);
+
   useAgUiTool({
     name: 'alert',
     description: 'Action. Display an alert to the user',
@@ -124,51 +263,79 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     background: false,
   });
 
-  // Example for a custom UI widget
-  //
-  // useAgUiTool({
-  //   name: 'weather',
-  //   description: 'Widget. Displays weather result to user',
-  //   render: ({ args }) => {
-  //     return <WeatherWidget {...args} />;
-  //   },
-  //   parameters: z.object({
-  //     temperature: z.number(),
-  //     feelsLike: z.number(),
-  //     humidity: z.number(),
-  //     windSpeed: z.number(),
-  //     windGust: z.number(),
-  //     conditions: z.string(),
-  //     location: z.string(),
-  //   }),
-  // });
+  // ヘッダーコンポーネント
+  const header = (
+    <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+      <div className="flex items-center gap-3">
+        <Bot className="h-6 w-6 text-[#81FBA5]" />
+        <h1 className="text-lg font-semibold text-foreground">
+          DataRobot Agent
+        </h1>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleDarkMode}
+          className="h-8 w-8 p-0"
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
-    <Chat initialMessages={initialMessages}>
-      <ChatMessages isLoading={isLoadingHistory} messages={combinedEvents} chatId={chatId}>
-        {combinedEvents &&
-          combinedEvents.map(m => {
-            if (isErrorStateEvent(m)) {
-              return <ChatError key={m.value.id} {...m.value} />;
-            }
-            if (isMessageStateEvent(m)) {
-              return <ChatMessagesMemo key={m.value.id} {...m.value} />;
-            }
-            if (isStepStateEvent(m)) {
-              return <StepEvent key={m.value.id} {...m.value} />;
-            }
-            if (isThinkingEvent(m)) {
-              return <ThinkingEvent key={m.type} />;
-            }
-          })}
-      </ChatMessages>
-      <ChatProgress progress={progress || {}} deleteProgress={deleteProgress} />
-      <ChatTextInput
-        userInput={userInput}
-        setUserInput={setUserInput}
-        onSubmit={sendMessage}
-        runningAgent={isAgentRunning}
-      />
-    </Chat>
+    <AnalysisLayout
+      header={header}
+      contextPanel={
+        <ContextPanel
+          currentProject={currentProject}
+          currentModel={currentModel}
+          recentActivities={recentActivities}
+        />
+      }
+      insightPanel={
+        <InsightPanel
+          insights={insights}
+          onTogglePin={handleTogglePin}
+          onRemove={handleRemoveInsight}
+        />
+      }
+    >
+      <Chat initialMessages={initialMessages}>
+        <ChatMessages isLoading={isLoadingHistory} messages={combinedEvents} chatId={chatId}>
+          {combinedEvents &&
+            combinedEvents.map((m) => {
+              if (isErrorStateEvent(m)) {
+                return <ChatError key={m.value.id} {...m.value} />;
+              }
+              if (isMessageStateEvent(m)) {
+                return <ChatMessagesMemo key={m.value.id} {...m.value} />;
+              }
+              if (isStepStateEvent(m)) {
+                return <StepEvent key={m.value.id} {...m.value} />;
+              }
+              if (isThinkingEvent(m)) {
+                return <ThinkingEvent key={m.type} />;
+              }
+            })}
+        </ChatMessages>
+        <ChatProgress progress={progress || {}} deleteProgress={deleteProgress} />
+        <ChatTextInput
+          userInput={userInput}
+          setUserInput={setUserInput}
+          onSubmit={sendMessage}
+          runningAgent={isAgentRunning}
+        />
+      </Chat>
+    </AnalysisLayout>
   );
 }

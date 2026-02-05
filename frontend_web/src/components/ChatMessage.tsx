@@ -112,7 +112,7 @@ export function TextContentPart({ part }: { part: TextUIPart }) {
     const insightTypes = [
       'feature_impact', 'model_metrics', 'project_list', 'model_comparison',
       'roc_curve', 'lift_chart', 'feature_effects', 'prediction_explanation',
-      'confusion_matrix', 'residuals'
+      'confusion_matrix', 'residuals', 'time_series_forecast'
     ].join('|');
     return part.text
       .replace(/```json[\s\S]*?```/g, '')

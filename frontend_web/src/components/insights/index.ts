@@ -36,6 +36,9 @@ export type { ConfusionMatrixData, ConfusionMatrixChartProps } from './Confusion
 export { ResidualsChart } from './ResidualsChart';
 export type { ResidualPoint, ResidualsChartProps } from './ResidualsChart';
 
+export { TimeSeriesForecastChart } from './TimeSeriesForecastChart';
+export type { TimeSeriesDataPoint, TimeSeriesForecastChartProps } from './TimeSeriesForecastChart';
+
 // メインレンダラー
 export { InsightRenderer, parseInsightFromMessage } from './InsightRenderer';
 export type {
@@ -50,4 +53,5 @@ export type {
   PredictionExplanationInsight,
   ConfusionMatrixInsight,
   ResidualsInsight,
+  TimeSeriesForecastInsight,
 } from './InsightRenderer';
