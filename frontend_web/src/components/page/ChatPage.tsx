@@ -211,16 +211,17 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     ]);
   }, []);
 
-  // 会話からインサイトを自動抽出
+  // 会話からインサイトとコンテキストを自動抽出
   useEffect(() => {
     if (!combinedEvents) return;
 
     combinedEvents.forEach((event) => {
-      // アシスタントメッセージからインサイトを抽出
+      // アシスタントメッセージから情報を抽出
       if (isMessageStateEvent(event) && event.value.role === 'assistant') {
         const content = event.value.content;
         if (content && typeof content === 'object' && 'parts' in content) {
-          (content.parts as Array<{ type: string; text?: string }>).forEach((part) => {
+          (content.parts as Array<{ type: string; text?: string; toolInvocation?: { toolName: string; result?: string; args?: Record<string, unknown> } }>).forEach((part) => {
+            // テキストパーツからインサイトを抽出
             if (part.type === 'text' && part.text) {
               const insightData = parseInsightFromMessage(part.text);
               if (insightData) {
@@ -244,60 +245,115 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                 }
               }
             }
+
+            // ツール呼び出しの結果からコンテキストを抽出
+            if (part.type === 'tool-invocation' && part.toolInvocation) {
+              const { toolName, result } = part.toolInvocation;
+              
+              // list_projectsツールの結果からプロジェクト情報を抽出
+              if (toolName === 'list_projects' && result) {
+                try {
+                  const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+                  // プロジェクトIDと名前のペアを探す（Unicodeエスケープ対応）
+                  const projectMatches = resultStr.matchAll(/"([a-f0-9]{24})":\s*"([^"]+)"/g);
+                  const projects: Array<{id: string; name: string}> = [];
+                  for (const match of projectMatches) {
+                    // Unicodeエスケープをデコード
+                    const decodedName = match[2].replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => 
+                      String.fromCharCode(parseInt(hex, 16))
+                    );
+                    projects.push({ id: match[1], name: decodedName });
+                  }
+                  if (projects.length > 0) {
+                    // 最初のプロジェクトをコンテキストに設定
+                    const firstName = projects[0].name.split(' - ')[0]; // 日付部分を除去
+                    setCurrentProject((prev) => {
+                      // すでに同じプロジェクトが設定されている場合はスキップ
+                      if (prev?.id === projects[0].id) return prev;
+                      return {
+                        id: projects[0].id,
+                        name: firstName,
+                        modelCount: projects.length,
+                      };
+                    });
+                    // アクティビティに追加（重複チェック）
+                    setRecentActivities((prev) => {
+                      const activityName = `${projects.length}件のプロジェクト取得`;
+                      if (prev.some(a => a.name === activityName)) return prev;
+                      return [
+                        {
+                          id: uuid(),
+                          type: 'project',
+                          name: activityName,
+                          timestamp: new Date().toLocaleTimeString(),
+                        },
+                        ...prev.slice(0, 4),
+                      ];
+                    });
+                  }
+                } catch {
+                  // パース失敗は無視
+                }
+              }
+
+              // get_feature_impactツールの結果からモデル情報を抽出
+              if (toolName === 'get_feature_impact' && result) {
+                setRecentActivities((prev) => {
+                  const activityName = 'Feature Impact取得';
+                  if (prev.some(a => a.name === activityName)) return prev;
+                  return [
+                    {
+                      id: uuid(),
+                      type: 'insight',
+                      name: activityName,
+                      timestamp: new Date().toLocaleTimeString(),
+                    },
+                    ...prev.slice(0, 4),
+                  ];
+                });
+              }
+
+              // get_model_accuracyツールの結果からモデル情報を抽出
+              if (toolName === 'get_model_accuracy' && result) {
+                setRecentActivities((prev) => {
+                  const activityName = 'モデル精度取得';
+                  if (prev.some(a => a.name === activityName)) return prev;
+                  return [
+                    {
+                      id: uuid(),
+                      type: 'model',
+                      name: activityName,
+                      timestamp: new Date().toLocaleTimeString(),
+                    },
+                    ...prev.slice(0, 4),
+                  ];
+                });
+              }
+
+              // get_leaderboardツールの結果からモデル情報を抽出
+              if (toolName === 'get_leaderboard' && result) {
+                try {
+                  // モデル名を抽出
+                  const modelMatch = result.match(/"model_type":\s*"([^"]+)"/);
+                  if (modelMatch) {
+                    const modelName = modelMatch[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => 
+                      String.fromCharCode(parseInt(hex, 16))
+                    );
+                    setCurrentModel((prev) => {
+                      if (prev?.name === modelName) return prev;
+                      return {
+                        id: uuid(),
+                        name: modelName,
+                        isRecommended: result.includes('"is_frozen": true'),
+                      };
+                    });
+                  }
+                } catch {
+                  // パース失敗は無視
+                }
+              }
+            }
           });
-        }
-      }
-
-      // ツール呼び出しの結果からコンテキストを抽出
-      if (isStepStateEvent(event)) {
-        const step = event.value;
-        const toolName = step.name || '';
-        const result = step.result;
-        
-        // list_projectsツールの結果からプロジェクト情報を抽出
-        if (toolName === 'list_projects' && result) {
-          try {
-            const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
-            // プロジェクトIDと名前のペアを探す
-            const projectMatches = resultStr.matchAll(/"([a-f0-9]{24})":\s*"([^"]+)"/g);
-            const projects: Array<{id: string; name: string}> = [];
-            for (const match of projectMatches) {
-              projects.push({ id: match[1], name: match[2] });
-            }
-            if (projects.length > 0) {
-              // 最初のプロジェクトをコンテキストに設定
-              setCurrentProject({
-                id: projects[0].id,
-                name: projects[0].name.split(' - ')[0], // 日付部分を除去
-                modelCount: projects.length,
-              });
-              // アクティビティに追加
-              setRecentActivities((prev) => [
-                {
-                  id: uuid(),
-                  type: 'project',
-                  name: `${projects.length}件のプロジェクト取得`,
-                  timestamp: new Date().toLocaleTimeString(),
-                },
-                ...prev.slice(0, 4),
-              ]);
-            }
-          } catch {
-            // パース失敗は無視
-          }
-        }
-
-        // get_feature_impactツールの結果からモデル情報を抽出
-        if ((toolName === 'get_feature_impact' || toolName === 'get_model_accuracy') && result) {
-          setRecentActivities((prev) => [
-            {
-              id: uuid(),
-              type: 'model',
-              name: toolName === 'get_feature_impact' ? 'Feature Impact取得' : 'モデル精度取得',
-              timestamp: new Date().toLocaleTimeString(),
-            },
-            ...prev.slice(0, 4),
-          ]);
         }
       }
     });
