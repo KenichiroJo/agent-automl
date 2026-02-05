@@ -36,7 +36,6 @@ import { ChatLayout } from '@/components/layout/ChatLayout';
 import { ContextBar } from '@/components/ContextBar';
 import { QuickActions } from '@/components/QuickActions';
 import { type ProjectInfo, type ModelInfo } from '@/components/layout';
-import { parseInsightFromMessage, type InsightData } from '@/components/insights';
 
 const initialMessages: MessageResponse[] = [
   {
