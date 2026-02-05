@@ -19,13 +19,13 @@ export type { ModelComparisonData, ModelComparisonTableProps } from './ModelComp
 
 // 追加のインサイトコンポーネント
 export { RocCurveChart } from './RocCurveChart';
-export type { RocCurvePoint, RocCurveChartProps } from './RocCurveChart';
+export type { RocCurveDataPoint, RocCurveChartProps } from './RocCurveChart';
 
 export { LiftChart } from './LiftChart';
-export type { LiftChartData, LiftChartProps } from './LiftChart';
+export type { LiftChartDataPoint, LiftChartProps } from './LiftChart';
 
 export { FeatureEffectsChart } from './FeatureEffectsChart';
-export type { FeatureEffectPoint, FeatureEffectsChartProps } from './FeatureEffectsChart';
+export type { FeatureEffectDataPoint, FeatureEffectsChartProps } from './FeatureEffectsChart';
 
 export { PredictionExplanation } from './PredictionExplanation';
 export type { ShapExplanation, PredictionExplanationProps } from './PredictionExplanation';

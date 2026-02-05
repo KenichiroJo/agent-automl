@@ -108,9 +108,15 @@ export function TextContentPart({ part }: { part: TextUIPart }) {
   const textWithoutJson = useMemo(() => {
     if (!insight) return part.text;
     // ```json ... ``` ブロックを除去
+    // サポートされる全インサイトタイプに対応
+    const insightTypes = [
+      'feature_impact', 'model_metrics', 'project_list', 'model_comparison',
+      'roc_curve', 'lift_chart', 'feature_effects', 'prediction_explanation',
+      'confusion_matrix', 'residuals'
+    ].join('|');
     return part.text
       .replace(/```json[\s\S]*?```/g, '')
-      .replace(/\{[\s\S]*"type"\s*:\s*"(feature_impact|model_metrics|project_list|model_comparison)"[\s\S]*\}/g, '')
+      .replace(new RegExp(`\\{[\\s\\S]*"type"\\s*:\\s*"(${insightTypes})"[\\s\\S]*\\}`, 'g'), '')
       .trim();
   }, [part.text, insight]);
 

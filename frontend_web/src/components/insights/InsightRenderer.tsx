@@ -9,9 +9,9 @@ import { FeatureImpactChart, type FeatureImpactData } from './FeatureImpactChart
 import { ModelMetricsCard, type ModelMetric } from './ModelMetricsCard';
 import { ProjectListTable, type Project } from './ProjectListTable';
 import { ModelComparisonTable, type ModelComparisonData } from './ModelComparisonTable';
-import { RocCurveChart, type RocCurvePoint } from './RocCurveChart';
-import { LiftChart, type LiftChartData } from './LiftChart';
-import { FeatureEffectsChart, type FeatureEffectPoint } from './FeatureEffectsChart';
+import { RocCurveChart, type RocCurveDataPoint } from './RocCurveChart';
+import { LiftChart, type LiftChartDataPoint } from './LiftChart';
+import { FeatureEffectsChart, type FeatureEffectDataPoint } from './FeatureEffectsChart';
 import { PredictionExplanation, type ShapExplanation } from './PredictionExplanation';
 import { ConfusionMatrixChart, type ConfusionMatrixData } from './ConfusionMatrixChart';
 import { ResidualsChart, type ResidualPoint } from './ResidualsChart';
@@ -48,14 +48,14 @@ export interface RocCurveInsight {
   modelName?: string;
   projectName?: string;
   auc: number;
-  data: RocCurvePoint[];
+  data: RocCurveDataPoint[];
 }
 
 export interface LiftChartInsight {
   type: 'lift_chart';
   modelName?: string;
   projectName?: string;
-  data: LiftChartData[];
+  data: LiftChartDataPoint[];
 }
 
 export interface FeatureEffectsInsight {
@@ -63,7 +63,7 @@ export interface FeatureEffectsInsight {
   modelName?: string;
   projectName?: string;
   featureName: string;
-  data: FeatureEffectPoint[];
+  data: FeatureEffectDataPoint[];
 }
 
 export interface PredictionExplanationInsight {

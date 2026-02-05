@@ -521,16 +521,13 @@ DataRobotには多様なモデルインサイト機能があります。ユー�
   "type": "confusion_matrix",
   "modelName": "モデル名",
   "projectName": "プロジェクト名",
-  "classes": ["Negative", "Positive"],
-  "matrix": [
-    [850, 50],
-    [30, 70]
-  ],
-  "metrics": {{
-    "accuracy": 0.92,
-    "precision": 0.58,
-    "recall": 0.70,
-    "f1Score": 0.64
+  "matrix": {{
+    "truePositives": 70,
+    "trueNegatives": 850,
+    "falsePositives": 50,
+    "falseNegatives": 30,
+    "positiveLabel": "Positive",
+    "negativeLabel": "Negative"
   }}
 }}
 ```
@@ -541,15 +538,10 @@ DataRobotには多様なモデルインサイト機能があります。ユー�
   "type": "residuals",
   "modelName": "モデル名",
   "projectName": "プロジェクト名",
-  "statistics": {{
-    "mean": 0.02,
-    "std": 1.25,
-    "min": -5.2,
-    "max": 4.8
-  }},
-  "data": [
-    {{"predicted": 100, "actual": 102, "residual": -2}},
-    {{"predicted": 150, "actual": 148, "residual": 2}}
+  "residuals": [
+    {{"actual": 102, "predicted": 100, "residual": 2}},
+    {{"actual": 148, "predicted": 150, "residual": -2}},
+    {{"actual": 205, "predicted": 200, "residual": 5}}
   ]
 }}
 ```
