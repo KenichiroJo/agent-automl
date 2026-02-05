@@ -17,6 +17,7 @@ import type { ContentPart, TextUIPart, ToolInvocationUIPart } from '@/types/mess
 import { useChatContext } from '@/hooks/use-chat-context';
 import type { ChatMessageEvent } from '@/types/events';
 import { Badge } from '@/components/ui/badge';
+import { InsightRenderer, parseInsightFromMessage } from '@/components/insights';
 
 interface ChatMessageErrorBoundaryProps {
   children: ReactNode;
@@ -100,12 +101,29 @@ const MarkdownBlock = memo(({ block, index }: { block: string; index: number }) 
 });
 
 export function TextContentPart({ part }: { part: TextUIPart }) {
-  const blocks = part.text.split(/(```markdown[\s\S]*?```)/g);
+  // インサイトデータ（JSON形式）を検出してレンダリング
+  const insight = useMemo(() => parseInsightFromMessage(part.text), [part.text]);
+
+  // JSONブロックを除いたテキスト部分を取得
+  const textWithoutJson = useMemo(() => {
+    if (!insight) return part.text;
+    // ```json ... ``` ブロックを除去
+    return part.text
+      .replace(/```json[\s\S]*?```/g, '')
+      .replace(/\{[\s\S]*"type"\s*:\s*"(feature_impact|model_metrics|project_list|model_comparison)"[\s\S]*\}/g, '')
+      .trim();
+  }, [part.text, insight]);
+
+  const blocks = textWithoutJson.split(/(```markdown[\s\S]*?```)/g);
+
   return (
     <>
-      {blocks.map((block, i) => (
+      {/* テキスト部分をMarkdownでレンダリング */}
+      {textWithoutJson && blocks.map((block, i) => (
         <MarkdownBlock key={i} block={block} index={i} />
       ))}
+      {/* インサイトコンポーネントをレンダリング */}
+      {insight && <InsightRenderer insight={insight} />}
     </>
   );
 }
