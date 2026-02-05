@@ -44,6 +44,11 @@ export function ChatMessages({ children, messages, isLoading, chatId }: ChatMess
   }, [chatId]);
 
   useEffect(() => {
+    shouldAutoscrollRef.current = true;
+    prevScrollRef.current = scrollContainerRef.current?.scrollTop ?? 0;
+  }, [chatId]);
+
+  useEffect(() => {
     if (scrollContainerRef.current && shouldAutoscrollRef.current) {
       scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }

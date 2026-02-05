@@ -425,20 +425,18 @@ class MessageRepository:
             return {}
 
         async with self._db.session() as sess:
-            result_dict = {}
+            response = await sess.exec(
+                select(Message)
+                .where(Message.chat_id.in_(chat_ids))
+                .order_by(Message.chat_id, desc(Message.created_at))  # type: ignore[arg-type]
+                .options(selectinload("*"))
+            )
 
-            # For each chat, get the latest message
-            # This approach avoids the GROUP BY error and is compatible with both SQLite and PostgreSQL
-            for chat_id in chat_ids:
-                response = await sess.exec(
-                    select(Message)
-                    .where(Message.chat_id == chat_id)
-                    .order_by(desc(Message.created_at))  # type: ignore[arg-type]
-                    .options(selectinload("*"))
-                    .limit(1)
-                )
-                message = response.first()
-                if message:
-                    result_dict[chat_id] = message
+            result_dict: dict[uuidpkg.UUID, Message] = {}
+            for message in response.all():
+                if message.chat_id and message.chat_id not in result_dict:
+                    result_dict[message.chat_id] = message
+                if len(result_dict) == len(chat_ids):
+                    break
 
             return result_dict

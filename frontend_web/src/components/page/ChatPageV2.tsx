@@ -206,9 +206,20 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
       // ユーザーメッセージからプロジェクト/モデルIDを検出
       if (isMessageStateEvent(event) && event.value.role === 'user') {
         const content = event.value.content;
+        let textPayload = '';
+
         if (content && typeof content === 'string') {
+          textPayload = content;
+        } else if (content && typeof content === 'object' && 'parts' in content) {
+          textPayload = (content.parts as Array<{ type: string; text?: string }>)
+            .filter(part => part.type === 'text' && part.text)
+            .map(part => part.text?.trim() ?? '')
+            .join('\n');
+        }
+
+        if (textPayload) {
           // プロジェクトIDの検出（24文字の16進数）
-          const projectIdMatch = content.match(/\b([a-f0-9]{24})\b/i);
+          const projectIdMatch = textPayload.match(/\b([a-f0-9]{24})\b/i);
           if (projectIdMatch) {
             const detectedId = projectIdMatch[1];
             processedEventsRef.current.add(eventId);

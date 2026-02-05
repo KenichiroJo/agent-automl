@@ -99,6 +99,43 @@ export function useAgUiChat({
     };
   }, [chatId]);
 
+  function serializeMessageContent(msg: MessageResponse): string {
+    const rawContent = msg.content;
+    if (!rawContent) {
+      return '';
+    }
+
+    if (typeof rawContent === 'string') {
+      return rawContent;
+    }
+
+    if ('parts' in rawContent) {
+      return (rawContent.parts as Array<{ type: string; text?: string; toolInvocation?: any }>)
+        .map(part => {
+          if (part.type === 'text' && part.text) {
+            return part.text;
+          }
+          if (part.type === 'tool-invocation' && part.toolInvocation) {
+            const payload = {
+              tool: part.toolInvocation.toolName,
+              args: part.toolInvocation.args,
+              result: part.toolInvocation.result,
+            };
+            try {
+              return `[tool:${payload.tool}] ${JSON.stringify(payload)}`;
+            } catch (error) {
+              return `[tool:${payload.tool}]`;
+            }
+          }
+          return '';
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    return '';
+  }
+
   // 履歴からエージェント用メッセージ形式に変換するヘルパー関数
   function buildMessagesFromHistory(): { id: string; role: string; content: string }[] {
     const messages: { id: string; role: string; content: string }[] = [];
@@ -107,18 +144,7 @@ export function useAgUiChat({
     if (history?.length) {
       for (const msg of history) {
         if (msg.role === 'user' || msg.role === 'assistant') {
-          let content = '';
-          if (msg.content && typeof msg.content === 'object' && 'parts' in msg.content) {
-            // parts配列からテキストを抽出
-            const parts = msg.content.parts as Array<{ type: string; text?: string }>;
-            content = parts
-              .filter(part => part.type === 'text' && part.text)
-              .map(part => part.text)
-              .join('\n');
-          } else if (typeof msg.content === 'string') {
-            content = msg.content;
-          }
-          
+          const content = serializeMessageContent(msg);
           if (content.trim()) {
             messages.push({
               id: msg.id,
@@ -139,18 +165,8 @@ export function useAgUiChat({
           if (messages.some(m => m.id === msg.id)) {
             continue;
           }
-          
-          let content = '';
-          if (msg.content && typeof msg.content === 'object' && 'parts' in msg.content) {
-            const parts = msg.content.parts as Array<{ type: string; text?: string }>;
-            content = parts
-              .filter(part => part.type === 'text' && part.text)
-              .map(part => part.text)
-              .join('\n');
-          } else if (typeof msg.content === 'string') {
-            content = msg.content;
-          }
-          
+
+          const content = serializeMessageContent(msg);
           if (content.trim()) {
             messages.push({
               id: msg.id,
