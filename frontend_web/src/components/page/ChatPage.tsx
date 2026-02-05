@@ -15,6 +15,7 @@ import { Chat } from '@/components/Chat';
 import { useChatContext } from '@/hooks/use-chat-context';
 import { useAgUiTool } from '@/hooks/use-ag-ui-tool';
 import { useChatList } from '@/hooks/use-chat-list';
+import { useContextState } from '@/hooks/use-context-state';
 import { ChatMessages } from '@/components/ChatMessages';
 import { ChatProgress } from '@/components/ChatProgress';
 import { ChatTextInput } from '@/components/ChatTextInput';
@@ -38,7 +39,6 @@ import {
   InsightPanel,
   type ProjectInfo,
   type ModelInfo,
-  type RecentActivity,
   type InsightItem,
 } from '@/components/layout';
 import { parseInsightFromMessage, type InsightData } from '@/components/insights';
@@ -144,19 +144,30 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     isAgentRunning,
   } = useChatContext();
 
-  // コンテキスト状態
-  const [currentProject, setCurrentProject] = useState<ProjectInfo | undefined>();
-  const [currentModel, setCurrentModel] = useState<ModelInfo | undefined>();
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  // コンテキスト状態（永続化対応）
+  const {
+    projectList,
+    modelList,
+    currentProject,
+    currentModel,
+    recentActivities,
+    setProjectList,
+    setModelList,
+    setCurrentProject,
+    setCurrentModel,
+    addActivity,
+    clearState,
+  } = useContextState(chatId);
+
+  // プロジェクト/モデル読み込み状態
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   // インサイト状態
   const [insights, setInsights] = useState<InsightItem[]>([]);
 
-  // chatIdが変わったときに状態をリセット
+  // chatIdが変わったときにインサイトだけリセット（コンテキストはuseContextStateが管理）
   useEffect(() => {
-    setCurrentProject(undefined);
-    setCurrentModel(undefined);
-    setRecentActivities([]);
     setInsights([]);
   }, [chatId]);
 
@@ -184,13 +195,12 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
 
     // モデル関連のインサイトからモデル情報を更新
     if ('modelName' in insight && insight.modelName) {
-      setCurrentModel((prev) => ({
-        ...prev,
-        id: prev?.id || uuid(),
+      setCurrentModel({
+        id: uuid(),
         name: insight.modelName || '',
-        score: 'metrics' in insight ? (insight as { metrics?: Array<{ value?: number }> }).metrics?.[0]?.value : prev?.score,
-        metric: 'metrics' in insight ? (insight as { metrics?: Array<{ name?: string }> }).metrics?.[0]?.name : prev?.metric,
-      }));
+        score: 'metrics' in insight ? (insight as { metrics?: Array<{ value?: number }> }).metrics?.[0]?.value : undefined,
+        metric: 'metrics' in insight ? (insight as { metrics?: Array<{ name?: string }> }).metrics?.[0]?.name : undefined,
+      });
     }
 
     // アクティビティを追加
@@ -200,16 +210,13 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                         'projectName' in insight ? insight.projectName || insight.type : 
                         insight.type;
     
-    setRecentActivities((prev) => [
-      {
-        id: uuid(),
-        type: activityType,
-        name: activityName || '',
-        timestamp: new Date().toLocaleTimeString(),
-      },
-      ...prev.slice(0, 4),
-    ]);
-  }, []);
+    addActivity({
+      id: uuid(),
+      type: activityType,
+      name: activityName || '',
+      timestamp: new Date().toLocaleTimeString(),
+    });
+  }, [setCurrentProject, setCurrentModel, addActivity]);
 
   // 会話からインサイトとコンテキストを自動抽出
   useEffect(() => {
@@ -256,39 +263,28 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                   const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
                   // プロジェクトIDと名前のペアを探す（Unicodeエスケープ対応）
                   const projectMatches = resultStr.matchAll(/"([a-f0-9]{24})":\s*"([^"]+)"/g);
-                  const projects: Array<{id: string; name: string}> = [];
+                  const projects: Array<ProjectInfo> = [];
                   for (const match of projectMatches) {
                     // Unicodeエスケープをデコード
                     const decodedName = match[2].replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => 
                       String.fromCharCode(parseInt(hex, 16))
                     );
-                    projects.push({ id: match[1], name: decodedName });
+                    const firstName = decodedName.split(' - ')[0]; // 日付部分を除去
+                    projects.push({ id: match[1], name: firstName });
                   }
                   if (projects.length > 0) {
-                    // 最初のプロジェクトをコンテキストに設定
-                    const firstName = projects[0].name.split(' - ')[0]; // 日付部分を除去
-                    setCurrentProject((prev) => {
-                      // すでに同じプロジェクトが設定されている場合はスキップ
-                      if (prev?.id === projects[0].id) return prev;
-                      return {
-                        id: projects[0].id,
-                        name: firstName,
-                        modelCount: projects.length,
-                      };
-                    });
-                    // アクティビティに追加（重複チェック）
-                    setRecentActivities((prev) => {
-                      const activityName = `${projects.length}件のプロジェクト取得`;
-                      if (prev.some(a => a.name === activityName)) return prev;
-                      return [
-                        {
-                          id: uuid(),
-                          type: 'project',
-                          name: activityName,
-                          timestamp: new Date().toLocaleTimeString(),
-                        },
-                        ...prev.slice(0, 4),
-                      ];
+                    // プロジェクトリストを保存
+                    setProjectList(projects);
+                    // 最初のプロジェクトをコンテキストに設定（未選択の場合のみ）
+                    if (!currentProject) {
+                      setCurrentProject(projects[0]);
+                    }
+                    // アクティビティに追加
+                    addActivity({
+                      id: uuid(),
+                      type: 'project',
+                      name: `${projects.length}件のプロジェクト取得`,
+                      timestamp: new Date().toLocaleTimeString(),
                     });
                   }
                 } catch {
@@ -296,57 +292,49 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                 }
               }
 
-              // get_feature_impactツールの結果からモデル情報を抽出
+              // get_feature_impactツールの結果からコンテキストを更新
               if (toolName === 'get_feature_impact' && result) {
-                setRecentActivities((prev) => {
-                  const activityName = 'Feature Impact取得';
-                  if (prev.some(a => a.name === activityName)) return prev;
-                  return [
-                    {
-                      id: uuid(),
-                      type: 'insight',
-                      name: activityName,
-                      timestamp: new Date().toLocaleTimeString(),
-                    },
-                    ...prev.slice(0, 4),
-                  ];
+                addActivity({
+                  id: uuid(),
+                  type: 'insight',
+                  name: 'Feature Impact取得',
+                  timestamp: new Date().toLocaleTimeString(),
                 });
               }
 
-              // get_model_accuracyツールの結果からモデル情報を抽出
+              // get_model_accuracyツールの結果からモデル情報を更新
               if (toolName === 'get_model_accuracy' && result) {
-                setRecentActivities((prev) => {
-                  const activityName = 'モデル精度取得';
-                  if (prev.some(a => a.name === activityName)) return prev;
-                  return [
-                    {
-                      id: uuid(),
-                      type: 'model',
-                      name: activityName,
-                      timestamp: new Date().toLocaleTimeString(),
-                    },
-                    ...prev.slice(0, 4),
-                  ];
+                addActivity({
+                  id: uuid(),
+                  type: 'model',
+                  name: 'モデル精度取得',
+                  timestamp: new Date().toLocaleTimeString(),
                 });
               }
 
-              // get_leaderboardツールの結果からモデル情報を抽出
+              // get_leaderboardツールの結果からモデル情報を抽出してリストに追加
               if (toolName === 'get_leaderboard' && result) {
                 try {
-                  // モデル名を抽出
-                  const modelMatch = result.match(/"model_type":\s*"([^"]+)"/);
-                  if (modelMatch) {
-                    const modelName = modelMatch[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => 
+                  // 全モデルを抽出
+                  const modelMatches = result.matchAll(/"model_type":\s*"([^"]+)"[^}]*"model_id":\s*"([^"]+)"/g);
+                  const models: Array<ModelInfo> = [];
+                  for (const match of modelMatches) {
+                    const modelName = match[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => 
                       String.fromCharCode(parseInt(hex, 16))
                     );
-                    setCurrentModel((prev) => {
-                      if (prev?.name === modelName) return prev;
-                      return {
-                        id: uuid(),
-                        name: modelName,
-                        isRecommended: result.includes('"is_frozen": true'),
-                      };
+                    models.push({
+                      id: match[2],
+                      name: modelName,
+                      isRecommended: result.includes('"is_frozen": true'),
                     });
+                  }
+                  if (models.length > 0) {
+                    // モデルリストを保存
+                    setModelList(models);
+                    // 最初のモデルをコンテキストに設定（未選択の場合のみ）
+                    if (!currentModel) {
+                      setCurrentModel(models[0]);
+                    }
                   }
                 } catch {
                   // パース失敗は無視
@@ -357,7 +345,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
         }
       }
     });
-  }, [combinedEvents, insights, updateContextFromInsight]);
+  }, [combinedEvents, insights, updateContextFromInsight, currentProject, currentModel, addActivity, setProjectList, setModelList, setCurrentProject, setCurrentModel]);
 
   // インサイトのピン留めトグル
   const handleTogglePin = useCallback((id: string) => {
@@ -410,6 +398,33 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     </div>
   );
 
+  // プロジェクト選択ハンドラー
+  const handleProjectSelect = useCallback((project: ProjectInfo) => {
+    setCurrentProject(project);
+    // プロジェクトが変わったらモデルリストをクリア
+    setModelList([]);
+    setCurrentModel(undefined);
+    // アクティビティに追加
+    addActivity({
+      id: uuid(),
+      type: 'project',
+      name: `プロジェクト選択: ${project.name}`,
+      timestamp: new Date().toLocaleTimeString(),
+    });
+  }, [setCurrentProject, setModelList, setCurrentModel, addActivity]);
+
+  // モデル選択ハンドラー
+  const handleModelSelect = useCallback((model: ModelInfo) => {
+    setCurrentModel(model);
+    // アクティビティに追加
+    addActivity({
+      id: uuid(),
+      type: 'model',
+      name: `モデル選択: ${model.name}`,
+      timestamp: new Date().toLocaleTimeString(),
+    });
+  }, [setCurrentModel, addActivity]);
+
   return (
     <AnalysisLayout
       header={header}
@@ -418,6 +433,12 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
           currentProject={currentProject}
           currentModel={currentModel}
           recentActivities={recentActivities}
+          projectList={projectList}
+          modelList={modelList}
+          isLoadingProjects={isLoadingProjects}
+          isLoadingModels={isLoadingModels}
+          onProjectSelect={handleProjectSelect}
+          onModelSelect={handleModelSelect}
         />
       }
       insightPanel={

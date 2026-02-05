@@ -2,6 +2,7 @@
  * Context Panel - 左カラム
  *
  * 現在のプロジェクト・モデル情報と履歴を表示
+ * プロジェクト/モデルをプルダウンで選択可能
  */
 import { useState } from 'react';
 import {
@@ -14,10 +15,19 @@ import {
   Target,
   Calendar,
   Layers,
+  RefreshCw,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface ProjectInfo {
   id: string;
@@ -51,10 +61,22 @@ export interface ContextPanelProps {
   currentModel?: ModelInfo;
   /** 最近のアクティビティ */
   recentActivities?: RecentActivity[];
+  /** プロジェクト一覧 */
+  projectList?: ProjectInfo[];
+  /** モデル一覧 */
+  modelList?: ModelInfo[];
+  /** プロジェクト読み込み中 */
+  isLoadingProjects?: boolean;
+  /** モデル読み込み中 */
+  isLoadingModels?: boolean;
   /** プロジェクト選択時のコールバック */
   onProjectSelect?: (project: ProjectInfo) => void;
   /** モデル選択時のコールバック */
   onModelSelect?: (model: ModelInfo) => void;
+  /** プロジェクト一覧を更新 */
+  onRefreshProjects?: () => void;
+  /** モデル一覧を更新 */
+  onRefreshModels?: () => void;
 }
 
 /**
@@ -103,10 +125,34 @@ export function ContextPanel({
   currentProject,
   currentModel,
   recentActivities = [],
+  projectList = [],
+  modelList = [],
+  isLoadingProjects = false,
+  isLoadingModels = false,
+  onProjectSelect,
+  onModelSelect,
+  onRefreshProjects,
+  onRefreshModels,
 }: ContextPanelProps) {
   const [isProjectOpen, setIsProjectOpen] = useState(true);
   const [isModelOpen, setIsModelOpen] = useState(true);
   const [isRecentOpen, setIsRecentOpen] = useState(true);
+
+  // プロジェクト選択ハンドラー
+  const handleProjectChange = (projectId: string) => {
+    const project = projectList.find((p) => p.id === projectId);
+    if (project && onProjectSelect) {
+      onProjectSelect(project);
+    }
+  };
+
+  // モデル選択ハンドラー
+  const handleModelChange = (modelId: string) => {
+    const model = modelList.find((m) => m.id === modelId);
+    if (model && onModelSelect) {
+      onModelSelect(model);
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -126,53 +172,89 @@ export function ContextPanel({
           isOpen={isProjectOpen}
           onToggle={() => setIsProjectOpen(!isProjectOpen)}
         >
-          {currentProject ? (
-            <div className="space-y-3 mt-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Name</p>
-                <p className="text-sm font-medium truncate">
-                  {currentProject.name}
-                </p>
-              </div>
-              {currentProject.target && (
-                <div className="flex items-center gap-2">
-                  <Target className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    Target: {currentProject.target}
-                  </span>
-                </div>
-              )}
-              {currentProject.metric && (
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    Metric: {currentProject.metric}
-                  </span>
-                </div>
-              )}
-              {currentProject.createdAt && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
-                    {currentProject.createdAt}
-                  </span>
-                </div>
-              )}
-              {currentProject.modelCount && (
-                <Badge variant="secondary" className="text-xs">
-                  <Layers className="h-3 w-3 mr-1" />
-                  {currentProject.modelCount} models
-                </Badge>
+          <div className="space-y-3 mt-3">
+            {/* プロジェクト選択プルダウン */}
+            <div className="flex items-center gap-2">
+              <Select
+                value={currentProject?.id || ''}
+                onValueChange={handleProjectChange}
+                disabled={isLoadingProjects}
+              >
+                <SelectTrigger className="flex-1 h-8 text-xs">
+                  <SelectValue placeholder="プロジェクトを選択..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {projectList.length > 0 ? (
+                    projectList.map((project) => (
+                      <SelectItem key={project.id} value={project.id} className="text-xs">
+                        <div className="flex items-center gap-2">
+                          {currentProject?.id === project.id && (
+                            <Check className="h-3 w-3 text-[#81FBA5]" />
+                          )}
+                          <span className="truncate max-w-[180px]">{project.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-xs text-muted-foreground text-center">
+                      「プロジェクト一覧を表示」と入力してください
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              {onRefreshProjects && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={onRefreshProjects}
+                  disabled={isLoadingProjects}
+                >
+                  <RefreshCw className={cn('h-3 w-3', isLoadingProjects && 'animate-spin')} />
+                </Button>
               )}
             </div>
-          ) : (
-            <div className="text-center py-4">
-              <FolderOpen className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-xs text-muted-foreground">
-                プロジェクトが選択されていません
+
+            {/* プロジェクト詳細 */}
+            {currentProject ? (
+              <>
+                {currentProject.target && (
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      Target: {currentProject.target}
+                    </span>
+                  </div>
+                )}
+                {currentProject.metric && (
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      Metric: {currentProject.metric}
+                    </span>
+                  </div>
+                )}
+                {currentProject.createdAt && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">
+                      {currentProject.createdAt}
+                    </span>
+                  </div>
+                )}
+                {currentProject.modelCount && (
+                  <Badge variant="secondary" className="text-xs">
+                    <Layers className="h-3 w-3 mr-1" />
+                    {currentProject.modelCount} models
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                プロジェクトを選択してください
               </p>
-            </div>
-          )}
+            )}
+          </div>
         </CollapsibleSection>
 
         {/* 現在のモデル */}
@@ -182,43 +264,85 @@ export function ContextPanel({
           isOpen={isModelOpen}
           onToggle={() => setIsModelOpen(!isModelOpen)}
         >
-          {currentModel ? (
-            <div className="space-y-3 mt-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Name</p>
-                <p className="text-sm font-medium truncate">
-                  {currentModel.name}
-                </p>
-              </div>
-              {currentModel.type && (
-                <Badge variant="outline" className="text-xs">
-                  {currentModel.type}
-                </Badge>
-              )}
-              {currentModel.score !== undefined && currentModel.metric && (
-                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                  <span className="text-xs text-muted-foreground">
-                    {currentModel.metric}
-                  </span>
-                  <span className="text-sm font-semibold text-[#81FBA5]">
-                    {currentModel.score.toFixed(4)}
-                  </span>
-                </div>
-              )}
-              {currentModel.isRecommended && (
-                <Badge className="bg-[#81FBA5] text-black text-xs">
-                  ★ Recommended
-                </Badge>
+          <div className="space-y-3 mt-3">
+            {/* モデル選択プルダウン */}
+            <div className="flex items-center gap-2">
+              <Select
+                value={currentModel?.id || ''}
+                onValueChange={handleModelChange}
+                disabled={isLoadingModels || !currentProject}
+              >
+                <SelectTrigger className="flex-1 h-8 text-xs">
+                  <SelectValue placeholder={currentProject ? "モデルを選択..." : "先にプロジェクトを選択"} />
+                </SelectTrigger>
+                <SelectContent className="max-h-60">
+                  {modelList.length > 0 ? (
+                    modelList.map((model) => (
+                      <SelectItem key={model.id} value={model.id} className="text-xs">
+                        <div className="flex items-center gap-2">
+                          {currentModel?.id === model.id && (
+                            <Check className="h-3 w-3 text-[#81FBA5]" />
+                          )}
+                          <span className="truncate max-w-[180px]">{model.name}</span>
+                          {model.isRecommended && (
+                            <span className="text-[10px] text-[#81FBA5]">★</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-xs text-muted-foreground text-center">
+                      {currentProject
+                        ? '「モデル一覧を表示」と入力してください'
+                        : '先にプロジェクトを選択してください'
+                      }
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              {onRefreshModels && currentProject && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={onRefreshModels}
+                  disabled={isLoadingModels}
+                >
+                  <RefreshCw className={cn('h-3 w-3', isLoadingModels && 'animate-spin')} />
+                </Button>
               )}
             </div>
-          ) : (
-            <div className="text-center py-4">
-              <Brain className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-xs text-muted-foreground">
-                モデルが選択されていません
+
+            {/* モデル詳細 */}
+            {currentModel ? (
+              <>
+                {currentModel.type && (
+                  <Badge variant="outline" className="text-xs">
+                    {currentModel.type}
+                  </Badge>
+                )}
+                {currentModel.score !== undefined && currentModel.metric && (
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                    <span className="text-xs text-muted-foreground">
+                      {currentModel.metric}
+                    </span>
+                    <span className="text-sm font-semibold text-[#81FBA5]">
+                      {currentModel.score.toFixed(4)}
+                    </span>
+                  </div>
+                )}
+                {currentModel.isRecommended && (
+                  <Badge className="bg-[#81FBA5] text-black text-xs">
+                    ★ Recommended
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                モデルを選択してください
               </p>
-            </div>
-          )}
+            )}
+          </div>
         </CollapsibleSection>
 
         {/* 最近のアクティビティ */}
