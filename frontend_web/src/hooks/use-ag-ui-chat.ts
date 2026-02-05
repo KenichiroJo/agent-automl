@@ -99,9 +99,81 @@ export function useAgUiChat({
     };
   }, [chatId]);
 
+  // 履歴からエージェント用メッセージ形式に変換するヘルパー関数
+  function buildMessagesFromHistory(): { id: string; role: string; content: string }[] {
+    const messages: { id: string; role: string; content: string }[] = [];
+    
+    // 既存の履歴（history）からメッセージを構築
+    if (history?.length) {
+      for (const msg of history) {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          let content = '';
+          if (msg.content && typeof msg.content === 'object' && 'parts' in msg.content) {
+            // parts配列からテキストを抽出
+            const parts = msg.content.parts as Array<{ type: string; text?: string }>;
+            content = parts
+              .filter(part => part.type === 'text' && part.text)
+              .map(part => part.text)
+              .join('\n');
+          } else if (typeof msg.content === 'string') {
+            content = msg.content;
+          }
+          
+          if (content.trim()) {
+            messages.push({
+              id: msg.id,
+              role: msg.role,
+              content: content,
+            });
+          }
+        }
+      }
+    }
+    
+    // 現在のセッションで追加されたイベントからもメッセージを追加
+    for (const event of events) {
+      if (event.type === 'message' && event.value) {
+        const msg = event.value;
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          // 既に追加済みのメッセージは除外
+          if (messages.some(m => m.id === msg.id)) {
+            continue;
+          }
+          
+          let content = '';
+          if (msg.content && typeof msg.content === 'object' && 'parts' in msg.content) {
+            const parts = msg.content.parts as Array<{ type: string; text?: string }>;
+            content = parts
+              .filter(part => part.type === 'text' && part.text)
+              .map(part => part.text)
+              .join('\n');
+          } else if (typeof msg.content === 'string') {
+            content = msg.content;
+          }
+          
+          if (content.trim()) {
+            messages.push({
+              id: msg.id,
+              role: msg.role,
+              content: content,
+            });
+          }
+        }
+      }
+    }
+    
+    return messages;
+  }
+
   async function sendMessage(message: string) {
     const messageId = uuid();
-    agent.messages = [{ id: messageId, role: 'user', content: message }];
+    
+    // 履歴を含めたメッセージリストを構築
+    const historyMessages = buildMessagesFromHistory();
+    agent.messages = [
+      ...historyMessages,
+      { id: messageId, role: 'user', content: message }
+    ];
 
     const historyMessage = createTextMessageFromUserInput({ message, chatId, messageId });
     addEvent({ type: 'message', value: historyMessage });
