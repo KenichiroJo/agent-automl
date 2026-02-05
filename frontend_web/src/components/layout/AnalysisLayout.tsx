@@ -9,8 +9,10 @@
  * - sm: 1カラム（会話のみ）、パネルはドロワーで表示
  * - md: 2カラム（会話 + インサイト）
  * - lg: 3カラム（フル表示）
+ *
+ * スクロール同期: 左・右パネルはメインエリアのスクロールに連動
  */
-import { useState, type ReactNode } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { Menu, ChevronLeft, ChevronRight, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -37,6 +39,34 @@ export function AnalysisLayout({
   const [isInsightOpen, setIsInsightOpen] = useState(true);
   const [isMobileContextOpen, setIsMobileContextOpen] = useState(false);
   const [isMobileInsightOpen, setIsMobileInsightOpen] = useState(false);
+
+  // スクロール同期用のref
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+
+  // メインエリアのスクロールを左右パネルに同期
+  useEffect(() => {
+    const mainEl = mainScrollRef.current;
+    if (!mainEl) return;
+
+    const handleScroll = () => {
+      const scrollTop = mainEl.scrollTop;
+      const scrollPercent = scrollTop / (mainEl.scrollHeight - mainEl.clientHeight);
+
+      if (leftPanelRef.current) {
+        const leftMax = leftPanelRef.current.scrollHeight - leftPanelRef.current.clientHeight;
+        leftPanelRef.current.scrollTop = scrollPercent * leftMax;
+      }
+      if (rightPanelRef.current) {
+        const rightMax = rightPanelRef.current.scrollHeight - rightPanelRef.current.clientHeight;
+        rightPanelRef.current.scrollTop = scrollPercent * rightMax;
+      }
+    };
+
+    mainEl.addEventListener('scroll', handleScroll, { passive: true });
+    return () => mainEl.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -109,14 +139,14 @@ export function AnalysisLayout({
 
           {/* パネルコンテンツ */}
           {isContextOpen && (
-            <div className="flex-1 overflow-y-auto">
+            <div ref={leftPanelRef} className="flex-1 overflow-y-auto scrollbar-thin">
               {contextPanel}
             </div>
           )}
         </aside>
 
         {/* 中央カラム: 会話エリア */}
-        <main className="flex-1 flex flex-col min-w-0 bg-background">
+        <main ref={mainScrollRef} className="flex-1 flex flex-col min-w-0 bg-background overflow-y-auto">
           {children}
         </main>
 
@@ -145,7 +175,7 @@ export function AnalysisLayout({
 
           {/* パネルコンテンツ */}
           {isInsightOpen && (
-            <div className="flex-1 overflow-y-auto">
+            <div ref={rightPanelRef} className="flex-1 overflow-y-auto scrollbar-thin">
               {insightPanel}
             </div>
           )}

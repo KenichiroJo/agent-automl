@@ -1,4 +1,4 @@
-import { memo, useMemo, Component, type ReactNode, type ErrorInfo } from 'react';
+import { memo, useMemo, useState, Component, type ReactNode, type ErrorInfo } from 'react';
 import {
   User,
   Bot,
@@ -6,9 +6,12 @@ import {
   Hammer,
   Wrench,
   ChevronRight,
+  ChevronDown,
   CheckCircle2,
   Loader2,
   AlertTriangle,
+  Minimize2,
+  Maximize2,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from '@/components/ui/code-block';
@@ -135,6 +138,7 @@ export function TextContentPart({ part }: { part: TextUIPart }) {
 }
 
 export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const { toolInvocation } = part;
   const { toolName } = toolInvocation;
   const ctx = useChatContext();
@@ -156,40 +160,62 @@ export function ToolInvocationPart({ part }: { part: ToolInvocationUIPart }) {
 
   return (
     <div className="my-2 rounded-lg border border-border bg-card/50 dark:bg-card/30 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-muted/30 dark:bg-muted/20 border-b border-border">
-        <Wrench className="w-4 h-4 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground">Tool Call</span>
+      {/* Header - クリックで展開/折りたたみ */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 px-3 py-2 bg-muted/30 dark:bg-muted/20 border-b border-border w-full text-left hover:bg-muted/50 transition-colors"
+      >
+        {/* 展開/折りたたみアイコン */}
+        {isExpanded ? (
+          <ChevronDown className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+        ) : (
+          <ChevronRight className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+        )}
+        <Wrench className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <span className="text-sm text-muted-foreground">Tool</span>
         <Badge variant="secondary" className="font-mono text-xs">
           {toolInvocation.toolName}
         </Badge>
-        {hasResult ? (
-          <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400 ml-auto" />
-        ) : (
-          <Loader2 className="w-4 h-4 text-muted-foreground ml-auto animate-spin" />
-        )}
-      </div>
-
-      {/* Arguments Section */}
-      {toolInvocation.args && (
-        <div className="border-b border-border last:border-b-0">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/20">
-            <ChevronRight className="w-3 h-3" />
-            Arguments
-          </div>
-          <CodeBlock code={JSON.stringify(toolInvocation.args, null, '  ')} />
+        <div className="ml-auto flex items-center gap-2">
+          {hasResult ? (
+            <CheckCircle2 className="w-4 h-4 text-green-500 dark:text-green-400" />
+          ) : (
+            <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+          )}
+          {isExpanded ? (
+            <Minimize2 className="w-3 h-3 text-muted-foreground" />
+          ) : (
+            <Maximize2 className="w-3 h-3 text-muted-foreground" />
+          )}
         </div>
-      )}
+      </button>
 
-      {/* Result Section */}
-      {toolInvocation.result && (
-        <div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/20">
-            <ChevronRight className="w-3 h-3" />
-            Result
-          </div>
-          <CodeBlock code={toolInvocation.result} />
-        </div>
+      {/* 展開時のみ詳細を表示 */}
+      {isExpanded && (
+        <>
+          {/* Arguments Section */}
+          {toolInvocation.args && (
+            <div className="border-b border-border last:border-b-0">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/20">
+                <ChevronRight className="w-3 h-3" />
+                Arguments
+              </div>
+              <CodeBlock code={JSON.stringify(toolInvocation.args, null, '  ')} />
+            </div>
+          )}
+
+          {/* Result Section */}
+          {toolInvocation.result && (
+            <div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-muted/20">
+                <ChevronRight className="w-3 h-3" />
+                Result
+              </div>
+              <CodeBlock code={toolInvocation.result} />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
