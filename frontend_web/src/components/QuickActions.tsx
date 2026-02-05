@@ -117,16 +117,6 @@ export function QuickActions({
           );
         })}
       </div>
-      {!hasProject && (
-        <p className="text-xs text-muted-foreground mt-2">
-          💡 まず「プロジェクト一覧」からプロジェクトを選択してください
-        </p>
-      )}
-      {hasProject && !hasModel && (
-        <p className="text-xs text-muted-foreground mt-2">
-          💡 「モデル比較」でモデルを確認し、詳細を見たいモデルを指定してください
-        </p>
-      )}
     </div>
   );
 }

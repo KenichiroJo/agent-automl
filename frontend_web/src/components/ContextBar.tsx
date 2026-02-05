@@ -122,13 +122,6 @@ export function ContextBar({
             )}
           </div>
         )}
-
-        {/* コンテキストがない場合のヒント */}
-        {!hasContext && (
-          <span className="text-xs text-muted-foreground hidden md:inline">
-            プロジェクトを選択するとここに表示されます
-          </span>
-        )}
       </div>
 
       {/* 右側: アクションボタン */}

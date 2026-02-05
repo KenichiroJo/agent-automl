@@ -6,7 +6,7 @@
  *
  * CONTEXTとINSIGHTSはチャット内にインライン表示
  */
-import { PropsWithChildren, useState, useEffect, useCallback } from 'react';
+import { PropsWithChildren, useState, useEffect, useCallback, useRef } from 'react';
 import { v4 as uuid } from 'uuid';
 import z from 'zod/v4';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,7 +50,7 @@ const initialMessages: MessageResponse[] = [
 
 プロジェクトの分析、モデルの評価、予測の実行など、DataRobotに関することをお手伝いします。
 
-まずは「**プロジェクト一覧**」ボタンをクリックするか、プロジェクトIDを入力してください。`,
+下のクイックアクションボタン、または直接質問を入力してください。`,
         },
       ],
     },
@@ -191,11 +191,18 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     });
   }, [setCurrentModel, addActivity]);
 
+  // 処理済みイベントIDを追跡（無限ループ防止）
+  const processedEventsRef = useRef<Set<string>>(new Set());
+
   // 会話からコンテキストを自動抽出
   useEffect(() => {
-    if (!combinedEvents) return;
+    if (!combinedEvents || combinedEvents.length === 0) return;
 
     combinedEvents.forEach((event) => {
+      // イベントIDがない場合は処理しない
+      const eventId = 'id' in event ? String(event.id) : undefined;
+      if (!eventId || processedEventsRef.current.has(eventId)) return;
+      
       // ユーザーメッセージからプロジェクト/モデルIDを検出
       if (isMessageStateEvent(event) && event.value.role === 'user') {
         const content = event.value.content;
@@ -204,23 +211,10 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
           const projectIdMatch = content.match(/\b([a-f0-9]{24})\b/i);
           if (projectIdMatch) {
             const detectedId = projectIdMatch[1];
-            // プロジェクトリストから該当プロジェクトを探す
-            const matchingProject = projectList.find((p) => p.id === detectedId);
-            if (matchingProject && currentProject?.id !== detectedId) {
-              setCurrentProject(matchingProject);
-              setModelList([]);
-              setCurrentModel(undefined);
-              addActivity({
-                id: uuid(),
-                type: 'project',
-                name: `プロジェクト選択: ${matchingProject.name}`,
-                timestamp: new Date().toLocaleTimeString(),
-              });
-            } else if (!matchingProject && currentProject?.id !== detectedId) {
-              setCurrentProject({ id: detectedId, name: `Project ${detectedId.slice(0, 8)}...` });
-              setModelList([]);
-              setCurrentModel(undefined);
-            }
+            processedEventsRef.current.add(eventId);
+            setCurrentProject({ id: detectedId, name: `Project ${detectedId.slice(0, 8)}...` });
+            setModelList([]);
+            setCurrentModel(undefined);
           }
         }
       }
@@ -229,45 +223,19 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
       if (isMessageStateEvent(event) && event.value.role === 'assistant') {
         const content = event.value.content;
         if (content && typeof content === 'object' && 'parts' in content) {
+          let hasExtractedData = false;
+          
           (content.parts as Array<{ type: string; text?: string; toolInvocation?: { toolName: string; result?: string; args?: Record<string, unknown> } }>).forEach((part) => {
             // テキストパーツからテーブル形式の情報を抽出
             if (part.type === 'text' && part.text) {
               const textContent = part.text;
 
-              // テーブル形式のモデル一覧を抽出
-              const modelTablePattern = /\|\s*(Light Gradient|RuleFit|Generalized|ElasticNet|Random Forest|XGBoost|Keras|AVG Blender|ENET Blender)[^|]*\|[^|]*\|[^|]*\|\s*([a-f0-9]{20,})\s*\|/gi;
-              const tableMatches = Array.from(textContent.matchAll(modelTablePattern));
-
-              if (tableMatches.length > 0 && modelList.length === 0) {
-                const extractedModels: Array<ModelInfo> = tableMatches.map((match) => ({
-                  id: match[2],
-                  name: match[1].trim(),
-                }));
-
-                const uniqueModels = extractedModels.filter(
-                  (model, index, self) => index === self.findIndex((m) => m.id === model.id)
-                );
-
-                if (uniqueModels.length > 0) {
-                  setModelList(uniqueModels);
-                  if (!currentModel) {
-                    setCurrentModel(uniqueModels[0]);
-                  }
-                  addActivity({
-                    id: uuid(),
-                    type: 'model',
-                    name: `${uniqueModels.length}件のモデル取得`,
-                    timestamp: new Date().toLocaleTimeString(),
-                  });
-                }
-              }
-
               // テーブル形式のプロジェクト一覧を抽出
               const projectTablePattern = /\|\s*([a-f0-9]{24})\s*\|\s*([^|]+?)\s*\|/gi;
               const projectTableMatches = Array.from(textContent.matchAll(projectTablePattern));
 
-              if (projectTableMatches.length > 0 && projectList.length === 0) {
-                const extractedProjects: Array<ProjectInfo> = projectTableMatches.map((match) => {
+              if (projectTableMatches.length > 0) {
+                const extractedProjects: Array<ProjectInfo> = projectTableMatches.slice(0, 20).map((match) => {
                   const fullName = match[2].trim();
                   const shortName = fullName.split(' - ')[0];
                   return { id: match[1], name: shortName };
@@ -278,11 +246,39 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                 );
 
                 if (uniqueProjects.length > 0) {
+                  hasExtractedData = true;
                   setProjectList(uniqueProjects);
                   addActivity({
                     id: uuid(),
                     type: 'project',
                     name: `${uniqueProjects.length}件のプロジェクト取得`,
+                    timestamp: new Date().toLocaleTimeString(),
+                  });
+                }
+              }
+
+              // テーブル形式のモデル一覧を抽出
+              const modelTablePattern = /\|\s*(Light Gradient|RuleFit|Generalized|ElasticNet|Random Forest|XGBoost|Keras|AVG Blender|ENET Blender)[^|]*\|[^|]*\|[^|]*\|\s*([a-f0-9]{20,})\s*\|/gi;
+              const tableMatches = Array.from(textContent.matchAll(modelTablePattern));
+
+              if (tableMatches.length > 0) {
+                const extractedModels: Array<ModelInfo> = tableMatches.map((match) => ({
+                  id: match[2],
+                  name: match[1].trim(),
+                }));
+
+                const uniqueModels = extractedModels.filter(
+                  (model, index, self) => index === self.findIndex((m) => m.id === model.id)
+                );
+
+                if (uniqueModels.length > 0) {
+                  hasExtractedData = true;
+                  setModelList(uniqueModels);
+                  setCurrentModel(uniqueModels[0]);
+                  addActivity({
+                    id: uuid(),
+                    type: 'model',
+                    name: `${uniqueModels.length}件のモデル取得`,
                     timestamp: new Date().toLocaleTimeString(),
                   });
                 }
@@ -300,6 +296,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                   const projectMatches = resultStr.matchAll(/"([a-f0-9]{24})":\s*"([^"]+)"/g);
                   const projects: Array<ProjectInfo> = [];
                   for (const match of projectMatches) {
+                    if (projects.length >= 20) break; // 最大20件まで
                     const decodedName = match[2].replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
                       String.fromCharCode(parseInt(hex, 16))
                     );
@@ -307,10 +304,9 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                     projects.push({ id: match[1], name: firstName });
                   }
                   if (projects.length > 0) {
+                    hasExtractedData = true;
                     setProjectList(projects);
-                    if (!currentProject) {
-                      setCurrentProject(projects[0]);
-                    }
+                    setCurrentProject(projects[0]);
                     addActivity({
                       id: uuid(),
                       type: 'project',
@@ -339,10 +335,9 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                   }
 
                   if (models.length > 0) {
+                    hasExtractedData = true;
                     setModelList(models);
-                    if (!currentModel) {
-                      setCurrentModel(models[0]);
-                    }
+                    setCurrentModel(models[0]);
                     addActivity({
                       id: uuid(),
                       type: 'model',
@@ -356,10 +351,15 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
               }
             }
           });
+
+          // 処理済みとしてマーク（データ抽出があった場合のみ）
+          if (hasExtractedData) {
+            processedEventsRef.current.add(eventId);
+          }
         }
       }
     });
-  }, [combinedEvents, currentProject, currentModel, addActivity, setProjectList, setModelList, setCurrentProject, setCurrentModel, projectList, modelList]);
+  }, [combinedEvents, addActivity, setProjectList, setModelList, setCurrentProject, setCurrentModel]);
 
   useAgUiTool({
     name: 'alert',
