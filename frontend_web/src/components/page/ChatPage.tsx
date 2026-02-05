@@ -223,6 +223,37 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
     if (!combinedEvents) return;
 
     combinedEvents.forEach((event) => {
+      // ユーザーメッセージからプロジェクト/モデルIDを検出
+      if (isMessageStateEvent(event) && event.value.role === 'user') {
+        const content = event.value.content;
+        if (content && typeof content === 'string') {
+          // プロジェクトIDの検出（24文字の16進数）
+          const projectIdMatch = content.match(/\b([a-f0-9]{24})\b/i);
+          if (projectIdMatch) {
+            const detectedId = projectIdMatch[1];
+            // プロジェクトリストから該当プロジェクトを探す
+            const matchingProject = projectList.find((p) => p.id === detectedId);
+            if (matchingProject && currentProject?.id !== detectedId) {
+              setCurrentProject(matchingProject);
+              // モデルリストをクリア（新しいプロジェクトなので）
+              setModelList([]);
+              setCurrentModel(undefined);
+              addActivity({
+                id: uuid(),
+                type: 'project',
+                name: `プロジェクト選択: ${matchingProject.name}`,
+                timestamp: new Date().toLocaleTimeString(),
+              });
+            } else if (!matchingProject && currentProject?.id !== detectedId) {
+              // リストにない場合でもIDをセット
+              setCurrentProject({ id: detectedId, name: `Project ${detectedId.slice(0, 8)}...` });
+              setModelList([]);
+              setCurrentModel(undefined);
+            }
+          }
+        }
+      }
+
       // アシスタントメッセージから情報を抽出
       if (isMessageStateEvent(event) && event.value.role === 'assistant') {
         const content = event.value.content;
@@ -230,7 +261,10 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
           (content.parts as Array<{ type: string; text?: string; toolInvocation?: { toolName: string; result?: string; args?: Record<string, unknown> } }>).forEach((part) => {
             // テキストパーツからインサイトを抽出
             if (part.type === 'text' && part.text) {
-              const insightData = parseInsightFromMessage(part.text);
+              const textContent = part.text;
+              
+              // JSONインサイトの抽出
+              const insightData = parseInsightFromMessage(textContent);
               if (insightData) {
                 // 重複チェック
                 const exists = insights.some(
@@ -249,6 +283,67 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
 
                   // プロジェクト/モデル情報を自動更新
                   updateContextFromInsight(insightData);
+                }
+              }
+
+              // テーブル形式のテキストからモデル一覧を抽出
+              // 例: | Light Gradient Boosted Trees | 0.70383 | 0.70575 | 6928eaeaf183425579ff84c8 |
+              const modelTablePattern = /\|\s*(Light Gradient|RuleFit|Generalized|ElasticNet|Random Forest|XGBoost|Keras|AVG Blender|ENET Blender)[^|]*\|[^|]*\|[^|]*\|\s*([a-f0-9]{20,})\s*\|/gi;
+              const tableMatches = Array.from(textContent.matchAll(modelTablePattern));
+              
+              if (tableMatches.length > 0) {
+                const extractedModels: Array<ModelInfo> = tableMatches.map((match) => ({
+                  id: match[2],
+                  name: match[1].trim(),
+                }));
+                
+                // 重複を除去
+                const uniqueModels = extractedModels.filter(
+                  (model, index, self) => index === self.findIndex((m) => m.id === model.id)
+                );
+                
+                if (uniqueModels.length > 0 && modelList.length === 0) {
+                  setModelList(uniqueModels);
+                  if (!currentModel) {
+                    setCurrentModel(uniqueModels[0]);
+                  }
+                  addActivity({
+                    id: uuid(),
+                    type: 'model',
+                    name: `${uniqueModels.length}件のモデル（テーブル）`,
+                    timestamp: new Date().toLocaleTimeString(),
+                  });
+                }
+              }
+
+              // テーブル形式のプロジェクト一覧からプロジェクト情報を抽出
+              // 例: |694b8c299abc828dbde0c461 | 2014-2024定点学習データ.csv - 2025-12-24 15:46:00 |
+              const projectTablePattern = /\|\s*([a-f0-9]{24})\s*\|\s*([^|]+?)\s*\|/gi;
+              const projectTableMatches = Array.from(textContent.matchAll(projectTablePattern));
+              
+              if (projectTableMatches.length > 0 && projectList.length === 0) {
+                const extractedProjects: Array<ProjectInfo> = projectTableMatches.map((match) => {
+                  const fullName = match[2].trim();
+                  const shortName = fullName.split(' - ')[0]; // 日付部分を除去
+                  return {
+                    id: match[1],
+                    name: shortName,
+                  };
+                });
+                
+                // 重複を除去
+                const uniqueProjects = extractedProjects.filter(
+                  (project, index, self) => index === self.findIndex((p) => p.id === project.id)
+                );
+                
+                if (uniqueProjects.length > 0) {
+                  setProjectList(uniqueProjects);
+                  addActivity({
+                    id: uuid(),
+                    type: 'project',
+                    name: `${uniqueProjects.length}件のプロジェクト（テーブル）`,
+                    timestamp: new Date().toLocaleTimeString(),
+                  });
                 }
               }
             }
@@ -340,12 +435,49 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                   // パース失敗は無視
                 }
               }
+
+              // list_modelsツールの結果からモデル情報を抽出
+              if (toolName === 'list_models' && result) {
+                try {
+                  const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+                  // モデルIDとモデルタイプを探す
+                  const modelIdMatches = resultStr.matchAll(/([a-f0-9]{24}[a-f0-9]+)\b/g);
+                  const modelTypeMatches = resultStr.matchAll(/Light Gradient Boosted Trees|RuleFit|Generalized Additive|ElasticNet|Random Forest|XGBoost|Keras|AVG Blender|ENET Blender/gi);
+                  
+                  const modelIds = Array.from(modelIdMatches).map(m => m[1]);
+                  const modelTypes = Array.from(modelTypeMatches).map(m => m[0]);
+                  
+                  const models: Array<ModelInfo> = [];
+                  // IDとタイプをペアリング
+                  for (let i = 0; i < Math.min(modelIds.length, modelTypes.length); i++) {
+                    models.push({
+                      id: modelIds[i],
+                      name: modelTypes[i],
+                    });
+                  }
+                  
+                  if (models.length > 0) {
+                    setModelList(models);
+                    if (!currentModel) {
+                      setCurrentModel(models[0]);
+                    }
+                    addActivity({
+                      id: uuid(),
+                      type: 'model',
+                      name: `${models.length}件のモデル取得`,
+                      timestamp: new Date().toLocaleTimeString(),
+                    });
+                  }
+                } catch {
+                  // パース失敗は無視
+                }
+              }
             }
           });
         }
       }
     });
-  }, [combinedEvents, insights, updateContextFromInsight, currentProject, currentModel, addActivity, setProjectList, setModelList, setCurrentProject, setCurrentModel]);
+  }, [combinedEvents, insights, updateContextFromInsight, currentProject, currentModel, addActivity, setProjectList, setModelList, setCurrentProject, setCurrentModel, projectList, modelList]);
 
   // インサイトのピン留めトグル
   const handleTogglePin = useCallback((id: string) => {

@@ -4,6 +4,9 @@
 export { AnalysisLayout } from './AnalysisLayout';
 export type { AnalysisLayoutProps } from './AnalysisLayout';
 
+export { ChatLayout } from './ChatLayout';
+export type { ChatLayoutProps } from './ChatLayout';
+
 export { ContextPanel } from './ContextPanel';
 export type {
   ContextPanelProps,
