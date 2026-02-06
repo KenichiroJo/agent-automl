@@ -758,13 +758,56 @@ class MyAgent(LangGraphAgent):
         agent: create_react_agent で構築されたエージェント
     """
 
+    # トークン数制限（余裕を持たせて100,000に設定）
+    MAX_CONTEXT_TOKENS = 100000
+    # 1文字あたりの平均トークン数（日本語は約1.5-2トークン/文字）
+    CHARS_PER_TOKEN = 0.5
+
+    def _estimate_tokens(self, text: str) -> int:
+        """テキストのトークン数を概算
+
+        Args:
+            text: 推定対象のテキスト
+
+        Returns:
+            int: 推定トークン数
+        """
+        return int(len(text) * self.CHARS_PER_TOKEN) + 1
+
+    def _truncate_message_content(self, content: str, max_tokens: int = 2000) -> str:
+        """メッセージの内容を切り詰める
+
+        ツール結果など長いコンテンツを適切に切り詰めます。
+
+        Args:
+            content: 元のコンテンツ
+            max_tokens: 最大トークン数
+
+        Returns:
+            str: 切り詰められたコンテンツ
+        """
+        estimated_tokens = self._estimate_tokens(content)
+        if estimated_tokens <= max_tokens:
+            return content
+
+        # 最大文字数を計算
+        max_chars = int(max_tokens / self.CHARS_PER_TOKEN)
+        
+        # JSON形式のデータを検出して切り詰め
+        if content.strip().startswith("{") or content.strip().startswith("["):
+            truncated = content[:max_chars]
+            return truncated + "\n... [データが長すぎるため省略されました]"
+        
+        # 通常のテキストの場合、最後を切り詰め
+        return content[:max_chars] + "\n... [続きは省略されました]"
+
     def convert_input_message(
         self, completion_create_params: CompletionCreateParams | Mapping[str, Any]
     ) -> Command:
-        """会話履歴全体を MessagesState に変換
+        """会話履歴を MessagesState に変換（トークン制限付き）
 
-        デフォルトの実装は最後のユーザーメッセージのみを抽出しますが、
-        このオーバーライドでは会話履歴全体を保持します。
+        会話履歴を保持しつつ、トークン数制限を考慮して
+        古いメッセージや長いツール結果を切り詰めます。
 
         Args:
             completion_create_params: OpenAI 形式のリクエストパラメータ
@@ -777,20 +820,40 @@ class MyAgent(LangGraphAgent):
         
         # OpenAI 形式のメッセージを LangChain 形式に変換
         langchain_messages = []
-        for msg in messages_raw:
+        total_tokens = 0
+        
+        # 最新のメッセージから逆順で処理し、トークン制限内に収める
+        for msg in reversed(messages_raw):
             role = msg.get("role", "user")
             content = msg.get("content", "")
             
+            # ツール結果（[tool:xxx] で始まる）は短く切り詰める
+            if role == "assistant" and content.startswith("[tool:"):
+                content = self._truncate_message_content(content, max_tokens=1500)
+            # 長いアシスタントメッセージも切り詰める
+            elif role == "assistant" and self._estimate_tokens(content) > 3000:
+                content = self._truncate_message_content(content, max_tokens=3000)
+            
+            msg_tokens = self._estimate_tokens(content)
+            
+            # トークン制限を超える場合は古いメッセージを除外
+            if total_tokens + msg_tokens > self.MAX_CONTEXT_TOKENS:
+                if self.verbose:
+                    print(f"[MyAgent] Token limit reached. Skipping older messages.")
+                break
+            
+            total_tokens += msg_tokens
+            
             if role == "system":
-                langchain_messages.append(SystemMessage(content=content))
+                langchain_messages.insert(0, SystemMessage(content=content))
             elif role == "assistant":
-                langchain_messages.append(AIMessage(content=content))
+                langchain_messages.insert(0, AIMessage(content=content))
             else:  # user
-                langchain_messages.append(HumanMessage(content=content))
+                langchain_messages.insert(0, HumanMessage(content=content))
         
         if self.verbose:
-            print(f"[MyAgent.convert_input_message] Converting {len(messages_raw)} messages to LangChain format")
-            for i, msg in enumerate(langchain_messages):
+            print(f"[MyAgent.convert_input_message] Converting {len(langchain_messages)}/{len(messages_raw)} messages (~{total_tokens} tokens)")
+            for i, msg in enumerate(langchain_messages[-5:]):  # 最後の5件のみ表示
                 content_preview = msg.content[:80] + "..." if len(msg.content) > 80 else msg.content
                 print(f"  [{i}] {type(msg).__name__}: {content_preview}")
         
