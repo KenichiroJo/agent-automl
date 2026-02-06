@@ -758,8 +758,8 @@ class MyAgent(LangGraphAgent):
         agent: create_react_agent で構築されたエージェント
     """
 
-    # トークン数制限（Gemini 3 Pro は 1M+ トークン対応、余裕を持って500,000に設定）
-    MAX_CONTEXT_TOKENS = 500000
+    # トークン数制限（Gemini 1.5 Pro は 2M トークン対応、余裕を持って1,000,000に設定）
+    MAX_CONTEXT_TOKENS = 1000000
     # 1文字あたりの平均トークン数（日本語は約1.5-2トークン/文字）
     CHARS_PER_TOKEN = 0.5
 
@@ -952,7 +952,7 @@ class MyAgent(LangGraphAgent):
         current_datetime = datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
 
         return create_react_agent(
-            self.llm(preferred_model="vertex_ai/gemini-3-pro-preview"),
+            self.llm(preferred_model="datarobot/google/gemini-1.5-pro"),
             tools=self.mcp_tools,
             prompt=make_system_prompt(
                 DATAROBOT_EXPERT_PROMPT.format(current_datetime=current_datetime)
