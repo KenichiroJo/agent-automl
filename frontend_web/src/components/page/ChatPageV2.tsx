@@ -412,6 +412,8 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
       <QuickActions
         hasProject={!!currentProject}
         hasModel={!!currentModel}
+        currentProjectId={currentProject?.id}
+        currentModelId={currentModel?.id}
         onAction={handleQuickAction}
         isRunning={isAgentRunning}
       />

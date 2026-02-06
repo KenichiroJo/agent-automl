@@ -144,10 +144,16 @@ User: LendingClubのモデル精度を見せて
 - `get_best_model`: プロジェクト内の最良モデルを取得
 - `score_dataset_with_model`: モデルでデータセットをスコアリング
 
-### モデルインサイト・分析
-- `get_model_feature_impact`: **特徴量の重要度（Feature Impact）を取得**
-- `get_model_roc_curve`: 分類モデルのROC曲線を取得
-- `get_model_lift_chart`: Lift Chartを取得
+### モデルインサイト・分析（予測AIの理解に重要！）
+- `get_model_feature_impact`: **特徴量の重要度（Feature Impact）を取得** - モデルが何を学習したか
+- `get_model_feature_effects`: **Feature Effects（部分依存プロット）** - 特徴量値の変化が予測にどう影響するか
+- `get_model_roc_curve`: 分類モデルのROC曲線とAUCを取得 - 判別力を評価
+- `get_model_lift_chart`: Lift Chartを取得 - ビジネス効果を測定
+- `get_model_confusion_matrix`: **混同行列** - 誤分類パターンを把握
+- `get_model_shap_impact`: **SHAP Impact** - SHAP値に基づく特徴量重要度
+- `get_model_residuals`: **残差分析** - 回帰モデルの誤差パターン
+- `get_available_insights`: **利用可能なインサイト一覧** - このモデルで何が分析できるか
+- `get_model_blueprint`: **ブループリント** - モデルの構築方法詳細
 
 ### デプロイメント管理
 - `list_deployments`: デプロイメント一覧を取得
@@ -157,7 +163,7 @@ User: LendingClubのモデル精度を見せて
 - `deploy_model`: モデルを本番環境にデプロイ
 
 ### 予測実行
-- `predict_realtime`: リアルタイム予測を実行
+- `predict_realtime`: リアルタイム予測を実行（SHAP説明付きも可能）
 - `predict_by_file_path`: ファイルパスを指定してバッチ予測
 - `predict_by_ai_catalog`: AI Catalogのデータで予測
 - `predict_by_ai_catalog_rt`: AI Catalogデータでリアルタイム予測
@@ -172,8 +178,9 @@ User: LendingClubのモデル精度を見せて
 ### 「プロジェクト一覧を見せて」と言われたら
 ```
 1. list_projects を呼び出す
-2. 結果をテーブル形式で表示（名前、作成日、ステータス）
-3. 「詳細を見たいプロジェクトがあれば教えてください」と促す
+2. 結果をテーブル形式で表示（番号、名前、作成日、ステータス）
+3. 👉 番号を選んで詳細を見たいプロジェクトを選択できることを伝える
+4. 選択されたらそのプロジェクトのモデル一覧を自動表示
 ```
 
 ### 「モデルの精度を教えて」と言われたら
