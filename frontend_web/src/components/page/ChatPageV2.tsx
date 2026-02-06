@@ -198,10 +198,14 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
   useEffect(() => {
     if (!combinedEvents || combinedEvents.length === 0) return;
 
+    console.log('[ChatPageV2] Processing combinedEvents:', combinedEvents.length, 'events');
+
     combinedEvents.forEach((event) => {
       // イベントIDがない場合は処理しない
       const eventId = 'id' in event ? String(event.id) : undefined;
       if (!eventId || processedEventsRef.current.has(eventId)) return;
+      
+      console.log('[ChatPageV2] Processing event:', eventId, event);
       
       // ユーザーメッセージからプロジェクト/モデルIDを検出
       if (isMessageStateEvent(event) && event.value.role === 'user') {
@@ -246,7 +250,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
               const projectTableMatches = Array.from(textContent.matchAll(projectTablePattern));
 
               if (projectTableMatches.length > 0) {
-                const extractedProjects: Array<ProjectInfo> = projectTableMatches.slice(0, 20).map((match) => {
+                const extractedProjects: Array<ProjectInfo> = projectTableMatches.slice(0, 30).map((match) => {
                   const fullName = match[2].trim();
                   const shortName = fullName.split(' - ')[0];
                   return { id: match[1], name: shortName };
@@ -257,8 +261,14 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                 );
 
                 if (uniqueProjects.length > 0) {
+                  console.log('[ChatPageV2] Extracted projects from table:', uniqueProjects);
                   hasExtractedData = true;
                   setProjectList(uniqueProjects);
+                  // テーブル形式で抽出した場合も最初のプロジェクトを選択
+                  if (uniqueProjects.length > 0 && !currentProject) {
+                    setCurrentProject(uniqueProjects[0]);
+                    console.log('[ChatPageV2] Set currentProject from table to:', uniqueProjects[0]);
+                  }
                   addActivity({
                     id: uuid(),
                     type: 'project',
@@ -299,15 +309,17 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
             // ツール呼び出しの結果からコンテキストを抽出
             if (part.type === 'tool-invocation' && part.toolInvocation) {
               const { toolName, result } = part.toolInvocation;
+              console.log('[ChatPageV2] tool-invocation detected:', toolName, 'result:', result ? 'present' : 'missing');
 
               // list_projectsツールの結果からプロジェクト情報を抽出
               if (toolName === 'list_projects' && result) {
+                console.log('[ChatPageV2] list_projects tool result detected:', result);
                 try {
                   const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
                   const projectMatches = resultStr.matchAll(/"([a-f0-9]{24})":\s*"([^"]+)"/g);
                   const projects: Array<ProjectInfo> = [];
                   for (const match of projectMatches) {
-                    if (projects.length >= 20) break; // 最大20件まで
+                    if (projects.length >= 30) break; // 最大30件まで
                     const decodedName = match[2].replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) =>
                       String.fromCharCode(parseInt(hex, 16))
                     );
@@ -315,9 +327,11 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
                     projects.push({ id: match[1], name: firstName });
                   }
                   if (projects.length > 0) {
+                    console.log('[ChatPageV2] Extracted projects from list_projects:', projects);
                     hasExtractedData = true;
                     setProjectList(projects);
                     setCurrentProject(projects[0]);
+                    console.log('[ChatPageV2] Set currentProject to:', projects[0]);
                     addActivity({
                       id: uuid(),
                       type: 'project',
@@ -370,7 +384,7 @@ export function ChatImplementation({ chatId }: { chatId: string }) {
         }
       }
     });
-  }, [combinedEvents, addActivity, setProjectList, setModelList, setCurrentProject, setCurrentModel]);
+  }, [combinedEvents, addActivity, setProjectList, setModelList, setCurrentProject, setCurrentModel, currentProject]);
 
   useAgUiTool({
     name: 'alert',

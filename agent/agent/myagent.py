@@ -18,14 +18,17 @@ DataRobot AutoML/MLOps Agent
 ユーザーの自然言語による指示に基づいて機械学習ワークフローを実行します。
 """
 from datetime import datetime
-from typing import Any
+from typing import Any, Mapping, cast
 
 from datarobot_genai.core.agents import make_system_prompt
 from datarobot_genai.langgraph.agent import LangGraphAgent
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
+from langgraph.types import Command
+from openai.types.chat import CompletionCreateParams
 
 from agent.config import Config
 
@@ -754,6 +757,49 @@ class MyAgent(LangGraphAgent):
         workflow: ReAct パターンを実装した StateGraph
         agent: create_react_agent で構築されたエージェント
     """
+
+    def convert_input_message(
+        self, completion_create_params: CompletionCreateParams | Mapping[str, Any]
+    ) -> Command:
+        """会話履歴全体を MessagesState に変換
+
+        デフォルトの実装は最後のユーザーメッセージのみを抽出しますが、
+        このオーバーライドでは会話履歴全体を保持します。
+
+        Args:
+            completion_create_params: OpenAI 形式のリクエストパラメータ
+
+        Returns:
+            Command: 会話履歴を含む LangGraph コマンド
+        """
+        params = cast(Mapping[str, Any], completion_create_params)
+        messages_raw = params.get("messages", [])
+        
+        # OpenAI 形式のメッセージを LangChain 形式に変換
+        langchain_messages = []
+        for msg in messages_raw:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            
+            if role == "system":
+                langchain_messages.append(SystemMessage(content=content))
+            elif role == "assistant":
+                langchain_messages.append(AIMessage(content=content))
+            else:  # user
+                langchain_messages.append(HumanMessage(content=content))
+        
+        if self.verbose:
+            print(f"[MyAgent.convert_input_message] Converting {len(messages_raw)} messages to LangChain format")
+            for i, msg in enumerate(langchain_messages):
+                content_preview = msg.content[:80] + "..." if len(msg.content) > 80 else msg.content
+                print(f"  [{i}] {type(msg).__name__}: {content_preview}")
+        
+        command = Command(
+            update={
+                "messages": langchain_messages,
+            },
+        )
+        return command
 
     @property
     def workflow(self) -> StateGraph[MessagesState]:
