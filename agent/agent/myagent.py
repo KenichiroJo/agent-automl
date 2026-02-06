@@ -952,7 +952,7 @@ class MyAgent(LangGraphAgent):
         current_datetime = datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
 
         return create_react_agent(
-            self.llm(preferred_model="azure/gpt-5-2025-08-07"),
+            self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
             tools=self.mcp_tools,
             prompt=make_system_prompt(
                 DATAROBOT_EXPERT_PROMPT.format(current_datetime=current_datetime)
