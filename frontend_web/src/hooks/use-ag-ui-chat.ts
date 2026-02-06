@@ -169,6 +169,15 @@ export function useAgUiChat({
       { id: messageId, role: 'user', content: message }
     ];
 
+    // デバッグ: 履歴の送信状況をログ出力
+    console.log('[sendMessage] history length:', history?.length || 0);
+    console.log('[sendMessage] historyMessages:', historyMessages.map(m => ({ 
+      id: m.id.substring(0, 8), 
+      role: m.role, 
+      content: m.content.substring(0, 50) + '...' 
+    })));
+    console.log('[sendMessage] total messages being sent:', agent.messages.length);
+
     const historyMessage = createTextMessageFromUserInput({ message, chatId, messageId });
     addEvent({ type: 'message', value: historyMessage });
     setUserInput('');
@@ -284,6 +293,11 @@ export function useAgUiChat({
         setIsAgentRunning(false);
         setIsThinking(false);
         refetchChats();
+        // 履歴を再取得して次のリクエストで正しい会話コンテキストを使用できるようにする
+        setTimeout(() => {
+          refetchHistory();
+          console.log('[onRunFinishedEvent] History refetch triggered');
+        }, 100);
       },
       onCustomEvent(params: { event: CustomEvent } & AgentSubscriberParams) {
         const event = params.event;

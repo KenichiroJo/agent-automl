@@ -242,6 +242,13 @@ class DataRobotAGUIAgent(AGUIAgent):
                     "content": input_message.content,
                 }
             )
+        
+        # デバッグ: 受信したメッセージ数をログ出力
+        logger.info(f"[_prepare_chat_completions_input] Received {len(messages)} messages")
+        for i, msg in enumerate(messages):
+            content_preview = msg['content'][:100] + '...' if len(msg['content']) > 100 else msg['content']
+            logger.info(f"  Message {i}: role={msg['role']}, content={content_preview}")
+        
         # Agent does not currently use the `model` parameter,, butintreface requires it.
         return {
             "messages": messages,

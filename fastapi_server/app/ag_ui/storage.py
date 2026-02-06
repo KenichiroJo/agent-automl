@@ -153,6 +153,10 @@ class AGUIAgentWithStorage(AGUIAgent):
             existing_message = await self._message_repo.get_message_by_agui_id(
                 existing_chat.uuid, message.id
             )
+            
+            # デバッグ: メッセージの検証状況をログ出力
+            logger.info(f"[storage.run] Checking message: id={message.id[:8] if len(message.id) > 8 else message.id}, role={message.role}, existing={existing_message is not None}")
+            
             if existing_message:
                 if existing_chat.uuid != existing_message.chat_id:
                     yield RunErrorEvent(
@@ -162,6 +166,8 @@ class AGUIAgentWithStorage(AGUIAgent):
                     return
             else:
                 if message.role != "user":
+                    # デバッグ: エラーの詳細をログ出力
+                    logger.warning(f"[storage.run] Rejecting non-user message: id={message.id}, role={message.role}, content_preview={message.content[:50] if message.content else 'N/A'}...")
                     yield RunErrorEvent(
                         message="The user cannot create new non-user messages.",
                         code=ErrorCodes.INVALID_INPUT.value,
