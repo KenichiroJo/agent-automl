@@ -439,3 +439,337 @@ async def get_model_blueprint(
         return json.dumps({
             "error": f"ブループリントの取得中にエラーが発生しました: {str(e)}"
         })
+
+
+@dr_mcp_tool(tags={"predictive", "review", "leakage"})
+async def check_leakage_risk(
+    project_id: str,
+    model_id: str
+) -> str:
+    """
+    DSモデルレビュー: リーケージリスクをチェックします。
+    
+    以下の観点でリーケージの可能性を評価します：
+    1. AUCが異常に高い（>0.9）
+    2. Feature ImpactでIDや名前列が上位
+    3. 特徴量数が多すぎる（次元の呪い）
+    
+    Args:
+        project_id: DataRobotのプロジェクトID
+        model_id: モデルID
+    
+    Returns:
+        リーケージリスク評価のJSON文字列
+    """
+    logger.info(f"Checking leakage risk for model {model_id} in project {project_id}")
+    
+    try:
+        _init_datarobot_client()
+        
+        model = dr.Model.get(project_id, model_id)
+        project = dr.Project.get(project_id)
+        
+        warnings = []
+        risk_level = "LOW"  # LOW, MEDIUM, HIGH
+        
+        # 1. AUCをチェック（分類モデルの場合）
+        auc_value = None
+        if hasattr(model, 'metrics'):
+            for metric_name, metric_values in model.metrics.items():
+                if 'AUC' in metric_name.upper():
+                    if isinstance(metric_values, dict):
+                        auc_value = metric_values.get('validation') or metric_values.get('holdout')
+                    break
+        
+        if auc_value and auc_value > 0.95:
+            warnings.append({
+                "type": "HIGH_AUC",
+                "severity": "HIGH",
+                "message": f"AUC = {auc_value:.4f} は非常に高いです。リーケージの可能性が高いです。",
+                "recommendation": "Feature Impactを確認し、予測時点で取得できない特徴量がないか検証してください。"
+            })
+            risk_level = "HIGH"
+        elif auc_value and auc_value > 0.9:
+            warnings.append({
+                "type": "HIGH_AUC",
+                "severity": "MEDIUM",
+                "message": f"AUC = {auc_value:.4f} は高めです。リーケージの可能性を検討してください。",
+                "recommendation": "特徴量が予測時点で利用可能か確認してください。"
+            })
+            if risk_level == "LOW":
+                risk_level = "MEDIUM"
+        
+        # 2. Feature Impactを取得してID/名前列をチェック
+        try:
+            feature_impact = model.get_feature_impact()
+            if feature_impact:
+                # ID/名前系の特徴量が上位にないかチェック
+                suspicious_patterns = ['id', 'ID', 'Id', 'name', 'Name', 'NAME', 'code', 'Code']
+                top_features = feature_impact[:5] if len(feature_impact) >= 5 else feature_impact
+                
+                for fi in top_features:
+                    feature_name = fi.feature_name if hasattr(fi, 'feature_name') else str(fi)
+                    for pattern in suspicious_patterns:
+                        if pattern in feature_name:
+                            warnings.append({
+                                "type": "SUSPICIOUS_FEATURE",
+                                "severity": "HIGH",
+                                "message": f"'{feature_name}'がFeature Impactの上位にあります。ID/名前系はリーケージの可能性があります。",
+                                "recommendation": "この特徴量を除外してモデルを再構築することを検討してください。"
+                            })
+                            risk_level = "HIGH"
+                            break
+        except Exception as e:
+            logger.warning(f"Could not check feature impact: {e}")
+        
+        # 3. 特徴量数と行数の比率チェック（次元の呪い）
+        try:
+            if hasattr(project, 'feature_count') and hasattr(project, 'row_count'):
+                feature_count = project.feature_count
+                row_count = project.row_count
+                ratio = feature_count / row_count if row_count > 0 else 0
+                
+                if ratio > 0.1:  # 特徴量数がサンプル数の10%以上
+                    warnings.append({
+                        "type": "DIMENSION_CURSE",
+                        "severity": "MEDIUM",
+                        "message": f"特徴量数({feature_count})がサンプル数({row_count})に対して多いです（比率: {ratio:.2%}）。",
+                        "recommendation": "特徴量選択を行い、重要な特徴量に絞ることを検討してください。"
+                    })
+                    if risk_level == "LOW":
+                        risk_level = "MEDIUM"
+        except Exception as e:
+            logger.warning(f"Could not check dimension curse: {e}")
+        
+        result = {
+            "type": "leakage_risk_check",
+            "modelId": model_id,
+            "modelName": model.model_type,
+            "projectId": project_id,
+            "projectName": project.project_name,
+            "riskLevel": risk_level,
+            "aucValue": auc_value,
+            "warnings": warnings,
+            "summary": f"リーケージリスク: {risk_level}。{len(warnings)}件の警告があります。" if warnings else "リーケージリスクは低いと判断されます。ただし、ビジネス観点での確認も行ってください。"
+        }
+        
+        return json.dumps(result, ensure_ascii=False, indent=2)
+        
+    except Exception as e:
+        logger.error(f"Error checking leakage risk: {e}")
+        return json.dumps({
+            "error": f"リーケージリスクチェック中にエラーが発生しました: {str(e)}"
+        })
+
+
+@dr_mcp_tool(tags={"predictive", "review", "partition"})
+async def get_partition_info(
+    project_id: str
+) -> str:
+    """
+    DSモデルレビュー: プロジェクトのパーティション（データ分割）設定を取得します。
+    
+    パーティション設定は、Train/Validation/Holdoutの分割方法を示し、
+    時系列データの場合はOTV（Out-of-Time Validation）設定も確認できます。
+    
+    Args:
+        project_id: DataRobotのプロジェクトID
+    
+    Returns:
+        パーティション情報のJSON文字列
+    """
+    logger.info(f"Getting partition info for project {project_id}")
+    
+    try:
+        _init_datarobot_client()
+        
+        project = dr.Project.get(project_id)
+        
+        partition_info = {
+            "type": "partition_info",
+            "projectId": project_id,
+            "projectName": project.project_name,
+            "partitionType": "Standard",
+            "recommendations": []
+        }
+        
+        # 日付パーティション（時系列）をチェック
+        if hasattr(project, 'partition') and project.partition:
+            partition = project.partition
+            
+            if hasattr(partition, 'datetime_partition_column') and partition.datetime_partition_column:
+                partition_info["partitionType"] = "Time Series (OTV)"
+                partition_info["datetimeColumn"] = partition.datetime_partition_column
+                
+                if hasattr(partition, 'validation_duration'):
+                    partition_info["validationDuration"] = str(partition.validation_duration)
+                if hasattr(partition, 'holdout_duration'):
+                    partition_info["holdoutDuration"] = str(partition.holdout_duration)
+            
+            # グループパーティションをチェック
+            elif hasattr(partition, 'cv_method') and partition.cv_method == 'group':
+                partition_info["partitionType"] = "Group Partition"
+                if hasattr(partition, 'partition_key_cols'):
+                    partition_info["groupColumn"] = partition.partition_key_cols
+            
+            # ユーザー定義パーティションをチェック
+            elif hasattr(partition, 'cv_method') and partition.cv_method == 'user':
+                partition_info["partitionType"] = "User Defined"
+                if hasattr(partition, 'user_partition_col'):
+                    partition_info["partitionColumn"] = partition.user_partition_col
+        
+        # パーティションに関する推奨事項
+        # 時系列データの場合
+        if partition_info["partitionType"] == "Standard":
+            # 日付列があるか確認（簡易チェック）
+            try:
+                features = project.get_features()
+                date_features = [f for f in features if 'date' in f.name.lower() or 'time' in f.name.lower()]
+                if date_features:
+                    partition_info["recommendations"].append({
+                        "type": "CONSIDER_OTV",
+                        "message": f"日付/時刻列 ({', '.join([f.name for f in date_features[:3]])}) があります。時系列データの場合はOTV（Out-of-Time Validation）を検討してください。"
+                    })
+            except Exception:
+                pass
+        
+        # ターゲット分布の不均衡チェック
+        if hasattr(project, 'target') and project.target:
+            partition_info["targetVariable"] = project.target
+            partition_info["targetType"] = project.target_type if hasattr(project, 'target_type') else "Unknown"
+            
+            if project.target_type in ['Binary', 'Multiclass']:
+                partition_info["recommendations"].append({
+                    "type": "STRATIFIED_SAMPLING",
+                    "message": "分類問題です。層化抽出（Stratified Sampling）が適用されているか確認してください。"
+                })
+        
+        return json.dumps(partition_info, ensure_ascii=False, indent=2)
+        
+    except Exception as e:
+        logger.error(f"Error getting partition info: {e}")
+        return json.dumps({
+            "error": f"パーティション情報の取得中にエラーが発生しました: {str(e)}"
+        })
+
+
+@dr_mcp_tool(tags={"predictive", "review", "data_quality"})
+async def check_data_quality(
+    project_id: str
+) -> str:
+    """
+    DSモデルレビュー: プロジェクトのデータ品質をチェックします。
+    
+    以下の観点でデータ品質を評価します：
+    1. ターゲット分布（不均衡チェック）
+    2. 欠損値の割合
+    3. 特徴量数とサンプル数のバランス
+    
+    Args:
+        project_id: DataRobotのプロジェクトID
+    
+    Returns:
+        データ品質チェック結果のJSON文字列
+    """
+    logger.info(f"Checking data quality for project {project_id}")
+    
+    try:
+        _init_datarobot_client()
+        
+        project = dr.Project.get(project_id)
+        
+        warnings = []
+        quality_score = "GOOD"  # GOOD, FAIR, POOR
+        
+        result = {
+            "type": "data_quality_check",
+            "projectId": project_id,
+            "projectName": project.project_name,
+            "targetVariable": project.target if hasattr(project, 'target') else None,
+            "targetType": project.target_type if hasattr(project, 'target_type') else None,
+        }
+        
+        # サンプル数を取得
+        row_count = project.max_train_rows if hasattr(project, 'max_train_rows') else None
+        result["rowCount"] = row_count
+        
+        # 特徴量情報を取得
+        try:
+            features = project.get_features()
+            feature_count = len(features) if features else 0
+            result["featureCount"] = feature_count
+            
+            # 欠損値が多い特徴量をチェック
+            high_missing_features = []
+            for f in features:
+                if hasattr(f, 'na_count') and hasattr(f, 'count'):
+                    if f.count > 0:
+                        missing_rate = f.na_count / f.count
+                        if missing_rate > 0.5:  # 50%以上欠損
+                            high_missing_features.append({
+                                "name": f.name,
+                                "missingRate": f"{missing_rate:.1%}"
+                            })
+            
+            if high_missing_features:
+                warnings.append({
+                    "type": "HIGH_MISSING_RATE",
+                    "severity": "MEDIUM",
+                    "message": f"{len(high_missing_features)}個の特徴量で欠損率が50%を超えています。",
+                    "features": high_missing_features[:5],  # 上位5件
+                    "recommendation": "欠損値の意味を確認し、適切な補完または除外を検討してください。"
+                })
+                if quality_score == "GOOD":
+                    quality_score = "FAIR"
+            
+            # 特徴量数とサンプル数のバランス
+            if row_count and feature_count:
+                if feature_count > row_count * 0.1:
+                    warnings.append({
+                        "type": "DIMENSION_CURSE",
+                        "severity": "MEDIUM",
+                        "message": f"特徴量数({feature_count})がサンプル数({row_count})の10%を超えています。",
+                        "recommendation": "次元の呪いを避けるため、特徴量選択を検討してください。"
+                    })
+                    if quality_score == "GOOD":
+                        quality_score = "FAIR"
+                        
+        except Exception as e:
+            logger.warning(f"Could not get feature info: {e}")
+        
+        # ターゲット分布（分類問題の場合）
+        if hasattr(project, 'target_type') and project.target_type in ['Binary', 'Multiclass']:
+            try:
+                # ターゲット分布を取得（可能な場合）
+                # Note: 詳細な分布はDataRobot APIでは直接取得できない場合がある
+                warnings.append({
+                    "type": "TARGET_DISTRIBUTION_CHECK",
+                    "severity": "INFO",
+                    "message": "分類問題です。ターゲット分布を確認し、マイノリティクラスが100件以上あることを確認してください。",
+                    "recommendation": "極端な不均衡（1%以下）がある場合は、アンダーサンプリングやクラス重み付けを検討してください。"
+                })
+            except Exception:
+                pass
+        
+        # サンプル数が少ない場合
+        if row_count and row_count < 1000:
+            warnings.append({
+                "type": "LOW_SAMPLE_SIZE",
+                "severity": "MEDIUM",
+                "message": f"サンプル数({row_count})が少ないため、モデルの汎化性能に注意が必要です。",
+                "recommendation": "追加データの取得、または正則化の強いモデルを選択してください。"
+            })
+            if quality_score == "GOOD":
+                quality_score = "FAIR"
+        
+        result["qualityScore"] = quality_score
+        result["warnings"] = warnings
+        result["summary"] = f"データ品質: {quality_score}。{len(warnings)}件の確認事項があります。" if warnings else "データ品質は良好です。"
+        
+        return json.dumps(result, ensure_ascii=False, indent=2)
+        
+    except Exception as e:
+        logger.error(f"Error checking data quality: {e}")
+        return json.dumps({
+            "error": f"データ品質チェック中にエラーが発生しました: {str(e)}"
+        })

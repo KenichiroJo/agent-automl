@@ -3,6 +3,7 @@
  *
  * よく使う操作をワンクリックで実行できるボタン群
  * インサイト機能（Feature Impact, ROC曲線等）への素早いアクセスを提供
+ * DSモデルレビュー機能（リーケージチェック、データ品質等）も含む
  */
 import { 
   FolderSearch, 
@@ -14,7 +15,10 @@ import {
   Info,
   HelpCircle,
   Sparkles,
-  ArrowUpDown
+  ArrowUpDown,
+  ShieldAlert,
+  Database,
+  ClipboardCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -26,7 +30,7 @@ export interface QuickAction {
   prompt: string;
   disabled?: boolean;
   /** アクションのカテゴリ（グループ分け用） */
-  category?: 'basic' | 'insight' | 'action';
+  category?: 'basic' | 'insight' | 'review' | 'action';
 }
 
 export interface QuickActionsProps {
@@ -110,6 +114,28 @@ const defaultActions: QuickAction[] = [
     prompt: 'このモデルについて、ビジネス担当者にもわかるように解説してください。何を学習したのか、どのような予測ができるのか、注意点は何かを教えてください。',
     category: 'insight',
   },
+  // DSモデルレビュー機能
+  {
+    id: 'leakage-check',
+    label: 'リーケージチェック',
+    icon: <ShieldAlert className="h-4 w-4" />,
+    prompt: 'このモデルのリーケージリスクをチェックしてください。AUCが高すぎないか、Feature ImpactにID列や名前列がないか、予測時点で取得できない特徴量がないか確認してください。',
+    category: 'review',
+  },
+  {
+    id: 'data-quality',
+    label: 'データ品質',
+    icon: <Database className="h-4 w-4" />,
+    prompt: 'このプロジェクトのデータ品質をチェックしてください。ターゲット分布の不均衡、欠損値の多い特徴量、サンプル数と特徴量数のバランスを確認してください。',
+    category: 'review',
+  },
+  {
+    id: 'model-review',
+    label: 'モデルレビュー',
+    icon: <ClipboardCheck className="h-4 w-4" />,
+    prompt: 'このモデルをDSの視点でレビューしてください。リーケージチェック、Feature Impactの妥当性、ビジネス直感との整合性、本番適用の可否を評価してください。',
+    category: 'review',
+  },
   // アクション
   {
     id: 'available-insights',
@@ -155,6 +181,7 @@ export function QuickActions({
         return false;
       // プロジェクト選択が必要
       case 'model-comparison':
+      case 'data-quality':
         return !hasProject;
       // モデル選択が必要
       case 'feature-impact':
@@ -163,6 +190,8 @@ export function QuickActions({
       case 'model-explanation':
       case 'available-insights':
       case 'deploy':
+      case 'leakage-check':
+      case 'model-review':
         return !hasModel;
       default:
         return false;
