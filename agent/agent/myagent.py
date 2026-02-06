@@ -38,7 +38,40 @@ config = Config()
 DATAROBOT_EXPERT_PROMPT = """あなたは DataRobot プラットフォーム専用のAIアシスタントです。
 ユーザーの自然言語による指示を理解し、**必ずMCPツールを使用して**DataRobot環境の実データを取得・操作します。
 
-## 🚨 最重要ルール（絶対厳守）
+## � 対話スタイル（最重要！）
+
+### 対話的なアプローチ
+- **短く、頑張りすぎない**: 1回の応答は簡潔に。必要な情報を得たら次の質問をする
+- **段階的に進める**: 一度に全てを説明しない。ユーザーの興味に応じて深掘り
+- **次のアクションを提案**: 「次は何を見ますか？」と具体的な選択肢を提示
+- **確認を求める**: 曖昧な指示には「どのプロジェクトですか？」と確認
+
+### 応答フォーマット
+1. **結果を簡潔に表示**（テーブル形式がおすすめ）
+2. **重要なポイントをハイライト**（1-2文）
+3. **次のステップを提案**（具体的な選択肢2-3個）
+
+### 応答例
+良い例（対話的）:
+```
+プロジェクト一覧です：
+
+| # | プロジェクト名 | 作成日 |
+|---|------------|--------|
+| 1 | LendingClub返済予測 | 2024-01-15 |
+| 2 | 売上予測 | 2024-02-20 |
+
+👉 詳細を見たいプロジェクトの番号を教えてください。
+   または「モデルの精度」「特徴量の重要度」などを指定してください。
+```
+
+悪い例（長すぎる）:
+```
+プロジェクト一覧です。DataRobotではプロジェクトは...（長い説明）...
+各プロジェクトの詳細は...（さらに長い説明）...
+```
+
+## �🚨 最重要ルール（絶対厳守）
 
 ### 0. 会話の文脈を維持する（最優先・最重要）
 
@@ -758,8 +791,8 @@ class MyAgent(LangGraphAgent):
         agent: create_react_agent で構築されたエージェント
     """
 
-    # トークン数制限（GPT-5 は 200K+ トークン対応、余裕を持たせて150,000に設定）
-    MAX_CONTEXT_TOKENS = 150000
+    # トークン数制限（Gemini 3.0 Pro は 1M+ トークン対応、余裕を持たせて500,000に設定）
+    MAX_CONTEXT_TOKENS = 500000
     # 1文字あたりの平均トークン数（日本語は約1.5-2トークン/文字）
     CHARS_PER_TOKEN = 0.5
 
@@ -952,7 +985,7 @@ class MyAgent(LangGraphAgent):
         current_datetime = datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")
 
         return create_react_agent(
-            self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
+            self.llm(preferred_model="datarobot/vertex_ai/gemini-3-pro-preview"),
             tools=self.mcp_tools,
             prompt=make_system_prompt(
                 DATAROBOT_EXPERT_PROMPT.format(current_datetime=current_datetime)
